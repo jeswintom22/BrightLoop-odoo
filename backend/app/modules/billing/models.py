@@ -41,6 +41,7 @@ class BillingRun(Base):
     generated: Mapped[int] = mapped_column(sa.Integer, default=0)
     skipped: Mapped[int] = mapped_column(sa.Integer, default=0)
     failed: Mapped[int] = mapped_column(sa.Integer, default=0)
+    closed: Mapped[int] = mapped_column(sa.Integer, default=0)
     errors: Mapped[list | None] = mapped_column(JSONB)
     started_at: Mapped[dt.datetime] = mapped_column(sa.DateTime(timezone=True), default=utc_now)
     finished_at: Mapped[dt.datetime | None] = mapped_column(sa.DateTime(timezone=True))
@@ -118,7 +119,7 @@ class InvoiceLine(Base):
     invoice_id: Mapped[uuid.UUID] = mapped_column(
         sa.ForeignKey("invoices.id", ondelete="CASCADE")
     )
-    product_id: Mapped[uuid.UUID | None] = mapped_column(sa.Uuid)  # P2
+    product_id: Mapped[int | None] = mapped_column(sa.Integer)  # P2 products.id
     subscription_line_id: Mapped[uuid.UUID | None] = mapped_column(sa.Uuid)  # P3
     description: Mapped[str] = mapped_column(sa.String(255))
     position: Mapped[int] = mapped_column(sa.Integer, default=0)

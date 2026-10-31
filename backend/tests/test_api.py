@@ -132,7 +132,7 @@ def test_dashboard_summary_shape(client):
     ):
         assert key in body
     assert body["draft_count"] == 4
-    assert body["active_subscriptions"] == 6  # stub seed: 6 active (incl. expired)
+    assert body["active_subscriptions"] == 5  # 6 seeded; run auto-closes the expired one
 
 
 def test_revenue_trend_shape(client):

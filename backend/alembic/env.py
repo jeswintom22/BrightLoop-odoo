@@ -13,6 +13,8 @@ from app.core.database import Base  # noqa: E402
 
 # Register every module's tables on the shared Base.metadata:
 import app.models  # noqa: E402,F401  — P2 catalog tables
+import app.modules.auth.models  # noqa: E402,F401  — P1 auth/customer tables
+import app.modules.subscriptions.models  # noqa: E402,F401  — P3 tables
 import app.modules.billing.models  # noqa: E402,F401  — P4 billing tables
 
 config = context.config

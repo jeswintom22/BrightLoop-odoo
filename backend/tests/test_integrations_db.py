@@ -68,90 +68,60 @@ def test_db_pricing_inactive_or_missing_product(session_factory):
     assert bd.line_total == Decimal("0.00")
 
 
-# --- P3/P1 contract adapters (contract-shaped tables, not Base models) -------
+# --- P3/P1 contract adapters — now run against the REAL shipped models ------
 
-_CONTRACT = sa.MetaData()
-
-_customers_t = sa.Table(
-    "customers",
-    _CONTRACT,
-    sa.Column("id", sa.String(36), primary_key=True),
-    sa.Column("name", sa.String(255), nullable=False),
-    sa.Column("email", sa.String(255), nullable=False),
-    sa.Column("billing_address", sa.Text),
-)
-_subs_t = sa.Table(
-    "subscriptions",
-    _CONTRACT,
-    sa.Column("id", sa.String(36), primary_key=True),
-    sa.Column("customer_id", sa.String(36), nullable=False),
-    sa.Column("status", sa.String(50), nullable=False),
-    sa.Column("billing_frequency", sa.String(50), nullable=False),
-    sa.Column("next_billing_date", sa.Date, nullable=False),
-    sa.Column("expiry_date", sa.Date),
-)
-_sub_items_t = sa.Table(
-    "subscription_items",
-    _CONTRACT,
-    sa.Column("id", sa.String(36), primary_key=True),
-    sa.Column("subscription_id", sa.String(36), nullable=False),
-    sa.Column("product_id", sa.String(36)),
-    sa.Column("description", sa.String(255)),
-    sa.Column("quantity", sa.Numeric(12, 2), nullable=False),
-)
+from app.modules.auth.models import Customer
+from app.modules.subscriptions.models import Subscription, SubscriptionItem
 
 
 @pytest.fixture()
-def contract_schema(engine, session):
-    _CONTRACT.create_all(engine)
-    cid, sid, lid = (str(uuid.uuid4()) for _ in range(3))
+def contract_schema(session):
+    cid, sid = uuid.uuid4(), uuid.uuid4()
     today = business_date()
-    session.execute(
-        _customers_t.insert(),
-        [
-            {
-                "id": cid,
-                "name": "Contract Customer",
-                "email": "cc@example.com",
-                "billing_address": "1 Test Way",
-            }
-        ],
+    session.add(
+        Customer(
+            id=cid,
+            name="Contract Customer",
+            email="cc@example.com",
+            billing_address="1 Test Way",
+        )
     )
-    session.execute(
-        _subs_t.insert(),
+    session.add_all(
         [
-            {
-                "id": sid,
-                "customer_id": cid,
-                "status": "active",
-                "billing_frequency": "monthly",
-                "next_billing_date": today,
-                "expiry_date": None,
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "customer_id": cid,
-                "status": "paused",
-                "billing_frequency": "monthly",
-                "next_billing_date": today,
-                "expiry_date": None,
-            },
-        ],
+            Subscription(
+                id=sid,
+                subscription_number="SUB-2026-000001",
+                customer_id=cid,
+                status="active",
+                billing_frequency="monthly",
+                start_date=today - dt.timedelta(days=30),
+                next_billing_date=today,
+                expiry_date=None,
+            ),
+            Subscription(
+                id=uuid.uuid4(),
+                subscription_number="SUB-2026-000002",
+                customer_id=cid,
+                status="paused",
+                billing_frequency="monthly",
+                start_date=today,
+                next_billing_date=today,
+                expiry_date=None,
+            ),
+        ]
     )
-    session.execute(
-        _sub_items_t.insert(),
-        [
-            {
-                "id": lid,
-                "subscription_id": sid,
-                "product_id": str(uuid.uuid4()),
-                "description": "Plan seat",
-                "quantity": Decimal("3"),
-            }
-        ],
+    session.add(
+        SubscriptionItem(
+            id=uuid.uuid4(),
+            subscription_id=sid,
+            product_id=1,
+            description="Plan seat",
+            quantity=Decimal("3"),
+            unit_price=Decimal("500"),
+        )
     )
     session.commit()
-    return {"customer_id": cid, "subscription_id": sid, "line_id": lid}
+    return {"customer_id": cid, "subscription_id": sid}
 
 
 def test_db_subscription_provider_due_and_advance(session_factory, contract_schema):
@@ -164,21 +134,23 @@ def test_db_subscription_provider_due_and_advance(session_factory, contract_sche
     due = subs.get_due_subscriptions(today)
     assert len(due) == 1
     view = due[0]
-    assert str(view.id) == contract_schema["subscription_id"]
+    assert view.id == contract_schema["subscription_id"]
     assert view.billing_frequency == "monthly"
     assert len(view.lines) == 1
     assert view.lines[0].quantity == Decimal("3")
 
     # advance_billing_date must run inside the caller's transaction
     with session_factory() as s:
-        subs.advance_billing_date(s, contract_schema["subscription_id"], today + dt.timedelta(days=30))
+        subs.advance_billing_date(
+            s, contract_schema["subscription_id"], today + dt.timedelta(days=30)
+        )
         s.commit()
     assert subs.count_due(today) == 0
 
 
 def test_db_customer_provider(session_factory, contract_schema):
     customers = DbCustomerProvider(session_factory)
-    cid = uuid.UUID(contract_schema["customer_id"])
+    cid = contract_schema["customer_id"]
     view = customers.get(cid)
     assert view.name == "Contract Customer"
     assert view.email == "cc@example.com"

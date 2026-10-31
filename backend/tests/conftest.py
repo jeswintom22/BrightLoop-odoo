@@ -10,6 +10,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import app.models  # noqa: F401 — register P2 catalog tables
+import app.modules.auth.models  # noqa: F401 — P1 tables
+import app.modules.subscriptions.models  # noqa: F401 — P3 tables
 from app.core.time import business_date
 from app.core.database import Base
 from app.modules.billing import models  # noqa: F401 — register P4 billing tables

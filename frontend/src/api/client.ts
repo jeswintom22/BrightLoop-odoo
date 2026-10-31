@@ -13,15 +13,20 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = localStorage.getItem("brightloop.token");
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
-      // TODO(P1): attach JWT once Person 1's auth is wired —
-      // Authorization: `Bearer ${token}`
     },
   });
+
+  if (res.status === 401 && token) {
+    localStorage.removeItem("brightloop.token");
+    if (!location.pathname.startsWith("/login")) location.assign("/login");
+  }
 
   if (!res.ok) {
     let code = "ERROR";

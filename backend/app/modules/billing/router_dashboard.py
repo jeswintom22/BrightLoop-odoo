@@ -16,7 +16,7 @@ from .schemas import DashboardSummary, RevenueTrendOut
 
 router = APIRouter(tags=["dashboard"])
 
-READ = Depends(require_roles("admin", "finance", "viewer"))
+READ = Depends(require_roles("admin", "staff"))
 
 
 @router.get("/dashboard/summary", response_model=DashboardSummary)

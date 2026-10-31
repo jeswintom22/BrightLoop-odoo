@@ -27,8 +27,8 @@ from .service_billing import BillingService
 
 router = APIRouter(tags=["billing"])
 
-READ = Depends(require_roles("admin", "finance", "viewer"))
-WRITE = Depends(require_roles("admin", "finance"))
+READ = Depends(require_roles("admin", "staff"))
+WRITE = Depends(require_roles("admin", "staff"))
 
 
 def _run_result(run: BillingRun, remaining: int) -> BillingRunResult:

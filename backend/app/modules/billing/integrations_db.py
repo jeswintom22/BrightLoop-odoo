@@ -42,7 +42,7 @@ CENTS = Decimal("0.01")
 
 _CUSTOMERS_TABLE = sa.table(
     "customers",
-    sa.column("id"),
+    sa.column("id", sa.Uuid),
     sa.column("name"),
     sa.column("email"),
     sa.column("billing_address"),
@@ -50,19 +50,19 @@ _CUSTOMERS_TABLE = sa.table(
 
 _SUBSCRIPTIONS_TABLE = sa.table(
     "subscriptions",
-    sa.column("id"),
-    sa.column("customer_id"),
+    sa.column("id", sa.Uuid),
+    sa.column("customer_id", sa.Uuid),
     sa.column("status"),
     sa.column("billing_frequency"),
-    sa.column("next_billing_date"),
-    sa.column("expiry_date"),
+    sa.column("next_billing_date", sa.Date),
+    sa.column("expiry_date", sa.Date),
 )
 
 _SUBSCRIPTION_ITEMS_TABLE = sa.table(
     "subscription_items",
-    sa.column("id"),
-    sa.column("subscription_id"),
-    sa.column("product_id"),
+    sa.column("id", sa.Uuid),
+    sa.column("subscription_id", sa.Uuid),
+    sa.column("product_id", sa.Integer),
     sa.column("description"),
     sa.column("quantity"),
 )
@@ -70,10 +70,13 @@ _SUBSCRIPTION_ITEMS_TABLE = sa.table(
 
 def _coerce_fk(value):
     """Cross-module ids: contract says UUID; owners may ship int PKs or UUID
-    columns. UUIDs are passed as their canonical string — Postgres casts it to
-    uuid automatically, and string-typed columns match directly."""
-    if isinstance(value, uuid.UUID):
-        return str(value)
+    columns. Typed columns bind UUID objects correctly per-dialect — convert
+    uuid-shaped strings, pass everything else through."""
+    if isinstance(value, str):
+        try:
+            return uuid.UUID(value)
+        except ValueError:
+            return value
     return value
 
 
@@ -182,6 +185,8 @@ class DbPricingProvider:
         discount_details: list[dict] = []
         for d in discounts:
             if Decimal(str(d.min_purchase_amount)) > subtotal:
+                continue
+            if Decimal(str(d.min_quantity or 0)) > quantity:
                 continue
             amount = (
                 (subtotal * Decimal(str(d.discount_value)) / Decimal("100"))
@@ -321,3 +326,8 @@ class DbSubscriptionProvider:
             .where(_SUBSCRIPTIONS_TABLE.c.id == _coerce_fk(subscription_id))
             .values(next_billing_date=billed_period_end)
         )
+
+    def close_expired(self, session: Session, as_of) -> int:
+        from ..subscriptions.service_subscriptions import close_expired
+
+        return close_expired(session, as_of)
