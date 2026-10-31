@@ -17,6 +17,9 @@ from .core.errors import (
 from .api.health import router as health_router
 from .routers.products import router as products_router
 from .routers.product_variants import router as variants_router
+from .routers.subscription_plans import router as plans_router
+from .routers.taxes import router as taxes_router
+from .routers.discounts import router as discounts_router
 from .modules.billing import (
     router_billing,
     router_dashboard,
@@ -71,6 +74,12 @@ def create_app() -> FastAPI:
     # Person 2 — catalog (products & variants)
     app.include_router(products_router, prefix=settings.API_V1_STR)
     app.include_router(variants_router, prefix=settings.API_V1_STR)
+    app.include_router(plans_router, prefix="/api")
+    app.include_router(plans_router, prefix=settings.API_V1_STR)
+    app.include_router(taxes_router, prefix="/api")
+    app.include_router(taxes_router, prefix=settings.API_V1_STR)
+    app.include_router(discounts_router, prefix="/api")
+    app.include_router(discounts_router, prefix=settings.API_V1_STR)
 
     # Person 4 — billing, payments & finance dashboard
     app.include_router(router_invoices.router, prefix="/api/v1")
