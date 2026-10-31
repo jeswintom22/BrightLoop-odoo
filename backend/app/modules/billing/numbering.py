@@ -15,6 +15,8 @@ _PREFIX = {"invoice": "INV", "payment": "PAY"}
 
 
 def allocate_number(session: Session, name: str, year: int, width: int = 6) -> str:
+    if name not in _PREFIX:
+        raise AppError("NUMBERING_FAILED", f"Unknown counter '{name}'", 500)
     for _ in range(3):
         row = session.execute(
             select(NumberCounter)
