@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 class TemplateLineIn(BaseModel):
     product_id: int | None = None
-    plan_id: int | None = None
+    plan_id: uuid.UUID | None = None
     description: str = ""
     quantity: Decimal = Field(gt=0, default=Decimal("1"))
 
@@ -39,7 +39,7 @@ class TemplateOut(BaseModel):
 class QuotationLineIn(BaseModel):
     product_id: int | None = None
     product_variant_id: int | None = None
-    plan_id: int | None = None
+    plan_id: uuid.UUID | None = None
     description: str = ""
     quantity: Decimal = Field(gt=0, default=Decimal("1"))
 
@@ -55,7 +55,7 @@ class QuotationLineOut(BaseModel):
     id: uuid.UUID
     product_id: int | None
     product_variant_id: int | None
-    plan_id: int | None
+    plan_id: uuid.UUID | None
     description: str
     quantity: Decimal
     unit_price: Decimal
@@ -100,7 +100,7 @@ class SubscriptionOut(BaseModel):
     id: uuid.UUID
     subscription_number: str
     customer_id: uuid.UUID
-    plan_id: int | None
+    plan_id: uuid.UUID | None
     quotation_id: uuid.UUID | None
     status: str
     billing_frequency: str

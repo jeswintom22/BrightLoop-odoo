@@ -92,7 +92,6 @@ def create_app() -> FastAPI:
     # Person 2 — catalog (products, variants, plans, taxes, discounts)
     app.include_router(products_router, prefix=settings.API_V1_STR)
     app.include_router(variants_router, prefix=settings.API_V1_STR)
-<<<<<<< HEAD
     app.include_router(plans_router, prefix="/api")
     app.include_router(plans_router, prefix=settings.API_V1_STR)
     app.include_router(taxes_router, prefix="/api")

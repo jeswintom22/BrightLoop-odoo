@@ -372,7 +372,7 @@ def close_expired(session: Session, as_of: dt.date | None = None) -> int:
     closed = 0
     for sub in rows:
         plan = session.get(SubscriptionPlan, sub.plan_id) if sub.plan_id else None
-        if plan is not None and not plan.auto_closure:
+        if plan is not None and not plan.automatic_closure:
             continue
         sub.status = "closed"
         closed += 1

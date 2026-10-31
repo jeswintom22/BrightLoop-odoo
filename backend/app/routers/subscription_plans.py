@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.deps import require_roles
 from app.services.subscription_plan_service import SubscriptionPlanService
 from app.schemas.subscription_plan import (
     SubscriptionPlanCreate,
@@ -30,6 +31,7 @@ def _format_plan_response(plan) -> SubscriptionPlanResponse:
     response_model=SubscriptionPlanResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a subscription plan",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def create_plan(plan_in: SubscriptionPlanCreate, db: Session = Depends(get_db)):
     try:
@@ -80,7 +82,7 @@ def get_plan(plan_id: uuid.UUID, db: Session = Depends(get_db)):
     return _format_plan_response(plan)
 
 
-@router.put("/{plan_id}", response_model=SubscriptionPlanResponse, summary="Update an existing plan")
+@router.put("/{plan_id}", response_model=SubscriptionPlanResponse, summary="Update an existing plan", dependencies=[Depends(require_roles("admin", "staff"))])
 def update_plan(
     plan_id: uuid.UUID,
     plan_in: SubscriptionPlanUpdate,
@@ -98,7 +100,7 @@ def update_plan(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
-@router.delete("/{plan_id}", summary="Safely archive or delete a plan")
+@router.delete("/{plan_id}", summary="Safely archive or delete a plan", dependencies=[Depends(require_roles("admin", "staff"))])
 def delete_plan(
     plan_id: uuid.UUID,
     hard_delete: bool = Query(False, description="Permanently delete from database (false archives)"),
@@ -116,7 +118,7 @@ def delete_plan(
     }
 
 
-@router.patch("/{plan_id}/status", response_model=SubscriptionPlanResponse, summary="Update plan status")
+@router.patch("/{plan_id}/status", response_model=SubscriptionPlanResponse, summary="Update plan status", dependencies=[Depends(require_roles("admin", "staff"))])
 def update_plan_status(
     plan_id: uuid.UUID,
     status_in: SubscriptionPlanStatusUpdate,

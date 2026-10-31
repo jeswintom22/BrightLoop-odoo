@@ -5,13 +5,12 @@ from app.models.product_variant import ProductVariant
 from app.models.subscription_plan import SubscriptionPlan
 from app.models.discount import Discount, discount_products
 from app.modules.subscriptions.models import (
+    QuotationTemplate,
+    QuotationTemplateLine,
     Quotation,
     QuotationLine,
     Subscription,
-    SubscriptionLine,
-    LifecycleStatus,
-    QuotationStatus,
-    SubscriptionStatus,
+    SubscriptionItem,
 )
 
 __all__ = [
@@ -22,11 +21,10 @@ __all__ = [
     "SubscriptionPlan",
     "Discount",
     "discount_products",
+    "QuotationTemplate",
+    "QuotationTemplateLine",
     "Quotation",
     "QuotationLine",
     "Subscription",
-    "SubscriptionLine",
-    "LifecycleStatus",
-    "QuotationStatus",
-    "SubscriptionStatus",
+    "SubscriptionItem",
 ]

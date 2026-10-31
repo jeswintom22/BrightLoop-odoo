@@ -56,8 +56,8 @@ class QuotationTemplateLine(Base):
     product_id: Mapped[int | None] = mapped_column(
         sa.Integer, sa.ForeignKey("products.id", ondelete="SET NULL")
     )
-    plan_id: Mapped[int | None] = mapped_column(
-        sa.Integer, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
     )
     description: Mapped[str] = mapped_column(sa.String(255), default="")
     quantity: Mapped[float] = mapped_column(sa.Numeric(12, 2), default=1)
@@ -108,8 +108,8 @@ class QuotationLine(Base):
     product_variant_id: Mapped[int | None] = mapped_column(
         sa.Integer, sa.ForeignKey("product_variants.id", ondelete="SET NULL")
     )
-    plan_id: Mapped[int | None] = mapped_column(
-        sa.Integer, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
     )
     description: Mapped[str] = mapped_column(sa.String(255), default="")
     quantity: Mapped[float] = mapped_column(sa.Numeric(12, 2), default=1)
@@ -129,8 +129,8 @@ class Subscription(Base):
     customer_id: Mapped[uuid.UUID] = mapped_column(
         sa.Uuid, sa.ForeignKey("customers.id"), index=True
     )
-    plan_id: Mapped[int | None] = mapped_column(
-        sa.Integer, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
     )
     quotation_id: Mapped[uuid.UUID | None] = mapped_column(
         sa.Uuid, sa.ForeignKey("quotations.id", ondelete="SET NULL")

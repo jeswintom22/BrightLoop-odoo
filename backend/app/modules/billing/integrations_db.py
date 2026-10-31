@@ -184,7 +184,7 @@ class DbPricingProvider:
         discount_total = Decimal("0.00")
         discount_details: list[dict] = []
         for d in discounts:
-            if Decimal(str(d.min_purchase_amount)) > subtotal:
+            if Decimal(str(d.minimum_purchase_amount)) > subtotal:
                 continue
             if Decimal(str(d.min_quantity or 0)) > quantity:
                 continue

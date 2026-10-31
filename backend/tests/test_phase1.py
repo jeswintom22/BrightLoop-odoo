@@ -253,9 +253,9 @@ def _catalog_seed(session):
     plan = SubscriptionPlan(
         name="Monthly", product_id=p.id, price=Decimal("200"),
         billing_frequency="monthly", minimum_quantity=1,
-        start_date=business_date() - dt.timedelta(days=1),
+        available_from=business_date() - dt.timedelta(days=1),
         status="active", allow_pause=True, allow_renewal=True,
-        allow_early_closure=True, auto_closure=True,
+        allow_early_closure=True, automatic_closure=True,
     )
     session.add(plan)
     session.flush()
@@ -277,7 +277,7 @@ def test_quotation_to_active_subscription(client, session):
         json={
             "name": "Std",
             "validity_days": 10,
-            "lines": [{"product_id": p.id, "plan_id": plan.id, "quantity": "2"}],
+            "lines": [{"product_id": p.id, "plan_id": str(plan.id), "quantity": "2"}],
         },
         headers=tok,
     )
@@ -324,7 +324,7 @@ def test_expired_quotation_rejected(client, session):
         "/api/v1/quotations",
         json={
             "customer_id": str(c.id),
-            "lines": [{"product_id": p.id, "plan_id": plan.id, "quantity": "1"}],
+            "lines": [{"product_id": p.id, "plan_id": str(plan.id), "quantity": "1"}],
         },
         headers=tok,
     )
@@ -429,7 +429,7 @@ def test_real_provider_billing_e2e(session, session_factory):
         discount_value=Decimal("100"),
         start_date=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1),
         expiry_date=dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=30),
-        is_active=True, min_purchase_amount=Decimal("0"),
+        is_active=True, minimum_purchase_amount=Decimal("0"),
     )
     session.add_all([tax, prod, disc])
     session.flush()

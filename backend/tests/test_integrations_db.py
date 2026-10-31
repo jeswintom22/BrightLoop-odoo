@@ -40,7 +40,7 @@ def catalog(session):
         discount_type="percentage",
         discount_value=Decimal("10.00"),
         start_date=utc_now() - dt.timedelta(days=1),
-        min_purchase_amount=Decimal("0.00"),
+        minimum_purchase_amount=Decimal("0.00"),
         is_active=True,
     )
     discount.applicable_products.append(product)
