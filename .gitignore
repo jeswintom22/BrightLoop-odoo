@@ -39,6 +39,7 @@ venv.bak/
 .env.local
 .env.*.local
 *.env
+!.env.example
 
 # SQLite & local databases
 *.sqlite
@@ -46,7 +47,7 @@ venv.bak/
 *.db
 *.db-journal
 
-# Next.js / Node.js
+# Node.js / Frontend
 node_modules/
 .next/
 out/
