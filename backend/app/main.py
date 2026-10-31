@@ -33,6 +33,7 @@ from .modules.billing import (
     router_invoices,
     router_payments,
 )
+from .modules.subscriptions import router_analytics
 from .modules.finance_intelligence import models as _finance_models  # noqa: F401 — register financial_summaries
 from .modules.finance_intelligence import router as router_finance_intelligence
 
@@ -118,6 +119,9 @@ def create_app() -> FastAPI:
     app.include_router(router_billing.router, prefix="/api/v1")
     app.include_router(router_dashboard.router, prefix="/api/v1")
     app.include_router(router_internal.router, prefix="/api/v1")
+
+    # Person 3 Phase 2 — subscription intelligence & churn analytics
+    app.include_router(router_analytics.router, prefix=settings.API_V1_STR)
 
     # Person 4 Phase 2 — revenue intelligence, AI copilot, risk & summaries
     app.include_router(router_finance_intelligence.router, prefix="/api/v1")
