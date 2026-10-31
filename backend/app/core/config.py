@@ -1,5 +1,7 @@
 import os
+from functools import lru_cache
 from typing import List, Union
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -8,9 +10,15 @@ DEFAULT_SQLITE_PATH = os.path.join(BACKEND_DIR, "brightloop.db").replace("\\", "
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "BrightLoop API - Product, Plans & Pricing"
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+    PROJECT_NAME: str = "BrightLoop Subscription Management API"
     VERSION: str = "1.0.0"
-    DESCRIPTION: str = "FastAPI backend for BrightLoop subscription, pricing, and tax management."
+    DESCRIPTION: str = (
+        "FastAPI backend for BrightLoop: catalog, subscriptions, billing and payments."
+    )
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
 
@@ -18,8 +26,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{DEFAULT_SQLITE_PATH}"
 
     # Frontend and CORS Origins
-    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: Union[str, List[str]] = [
+        "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://brightloop-odoo.vercel.app",
@@ -31,21 +40,37 @@ class Settings(BaseSettings):
     DB_POOL_RECYCLE: int = 300  # Recycle connections every 5 minutes
     DB_POOL_PRE_PING: bool = True  # Detect dead connections before reusing
 
+    # Auth — contract owned by Person 1. This app only needs to resolve the
+    # caller's identity + roles from a Bearer token.
+    JWT_SECRET: str = "dev-secret-change-me"
+    JWT_ALGORITHM: str = "HS256"
+    AUTH_DEV_BYPASS: bool = True  # dev only: skip JWT, act as a finance admin
+
+    # Shared secret for POST /api/v1/internal/billing/run (GitHub Actions).
+    INTERNAL_JOB_TOKEN: str = "dev-internal-token"
+
+    # Email (Resend). Empty key disables sending.
+    RESEND_API_KEY: str = ""
+    RESEND_FROM: str = "Brightloop Billing <billing@brightloop.example>"
+
+    DEFAULT_CURRENCY: str = "INR"
+
+    # Until P2/P3 modules land, billing uses in-process stub providers.
+    USE_STUB_PROVIDERS: bool = True
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]], values) -> List[str]:
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str) and not v.startswith("["):
-            origins = [i.strip() for i in v.split(",") if i.strip()]
-            return origins
-        elif isinstance(v, list):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        if isinstance(v, list):
             return v
         return ["*"]
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
-    )
-
 
 settings = Settings()
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return settings

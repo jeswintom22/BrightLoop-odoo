@@ -40,6 +40,7 @@ venv.bak/
 .env.local
 .env.*.local
 *.env
+!.env.example
 
 # SQLite & local databases
 *.sqlite
@@ -49,7 +50,7 @@ venv.bak/
 *.db-wal
 *.db-shm
 
-# Next.js / Node.js
+# Node.js / Frontend
 node_modules/
 .next/
 out/
@@ -89,3 +90,4 @@ coverage.xml
 # Logs
 logs/
 *.log
+frontend/.vite/
