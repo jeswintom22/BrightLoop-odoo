@@ -29,6 +29,10 @@ from .modules.billing import (
     router_invoices,
     router_payments,
 )
+from .modules.finance_intelligence import router as router_finance_intelligence
+from .modules.finance_intelligence import models as _fi_models  # noqa: F401
+from .modules.finance_intelligence import models as _finance_models  # noqa: F401 — register financial_summaries
+from .modules.finance_intelligence import router as router_finance_intelligence
 
 logger = logging.getLogger("brightloop.main")
 settings = get_settings()
@@ -108,6 +112,10 @@ def create_app() -> FastAPI:
     app.include_router(router_billing.router, prefix="/api/v1")
     app.include_router(router_dashboard.router, prefix="/api/v1")
     app.include_router(router_internal.router, prefix="/api/v1")
+    app.include_router(router_finance_intelligence.router, prefix="/api/v1")
+
+    # Person 4 Phase 2 — revenue intelligence, AI copilot, risk & summaries
+    app.include_router(router_finance_intelligence.router, prefix="/api/v1")
 
     app.add_api_route("/", root, methods=["GET"], tags=["Root"], summary="API Root & Overview")
 

@@ -1,7 +1,7 @@
 """Phase 2 (P4): financial_summaries — persisted AI report storage.
 
 Revision ID: 0003_finance_intelligence
-Revises: 0002_phase1
+Revises: 0003_catalog_align
 Create Date: 2026-10-31
 
 Dialect-portable (sqlite dev/tests + Postgres prod): sa.JSON maps to JSONB
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0003_finance_intelligence"
-down_revision: Union[str, None] = "0002_phase1"
+down_revision: Union[str, None] = "0003_catalog_align"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
