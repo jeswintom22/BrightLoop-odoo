@@ -32,8 +32,8 @@ from .service_billing import BillingService
 
 router = APIRouter(tags=["invoices"])
 
-READ = Depends(require_roles("admin", "finance", "viewer"))
-WRITE = Depends(require_roles("admin", "finance"))
+READ = Depends(require_roles("admin", "staff"))
+WRITE = Depends(require_roles("admin", "staff"))
 
 
 def _to_summary(invoice: Invoice, names: dict) -> InvoiceSummary:

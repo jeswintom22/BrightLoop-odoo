@@ -106,7 +106,7 @@ class StubSubscriptionProvider:
                 lines=[
                     SubscriptionLineView(
                         subscription_line_id=_uuid(seed + 500),
-                        product_id=_uuid(seed + 1000),
+                        product_id=seed + 1000,
                         description=f"Pro plan ({freq})",
                         quantity=Decimal("1"),
                     )
@@ -130,7 +130,7 @@ class StubSubscriptionProvider:
             lines=[
                 SubscriptionLineView(
                     subscription_line_id=_uuid(706),
-                    product_id=_uuid(1206),
+                    product_id=1206,
                     description="Legacy plan",
                     quantity=Decimal("1"),
                 )
@@ -168,3 +168,15 @@ class StubSubscriptionProvider:
     def advance_billing_date(self, session: Session, subscription_id, billed_period_end) -> None:
         view = self._subs[subscription_id]
         view.next_billing_date = billed_period_end
+
+    def close_expired(self, session: Session, as_of) -> int:
+        closed = 0
+        for v in self._subs.values():
+            if (
+                v.status == "active"
+                and v.expiry_date is not None
+                and v.expiry_date < as_of
+            ):
+                v.status = "closed"
+                closed += 1
+        return closed

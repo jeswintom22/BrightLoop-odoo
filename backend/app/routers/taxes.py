@@ -3,6 +3,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.deps import require_roles
 from app.services.tax_service import TaxService
 from app.schemas.tax import (
     TaxCreate,
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/taxes", tags=["Tax Configurations"])
     response_model=TaxResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new tax configuration",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def create_tax(tax_in: TaxCreate, db: Session = Depends(get_db)):
     try:
@@ -52,7 +54,7 @@ def get_tax(tax_id: uuid.UUID, db: Session = Depends(get_db)):
     return tax
 
 
-@router.put("/{tax_id}", response_model=TaxResponse, summary="Update a tax configuration")
+@router.put("/{tax_id}", response_model=TaxResponse, summary="Update a tax configuration", dependencies=[Depends(require_roles("admin", "staff"))])
 def update_tax(
     tax_id: uuid.UUID,
     tax_in: TaxUpdate,
@@ -70,7 +72,7 @@ def update_tax(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
-@router.delete("/{tax_id}", summary="Safely deactivate or delete a tax configuration")
+@router.delete("/{tax_id}", summary="Safely deactivate or delete a tax configuration", dependencies=[Depends(require_roles("admin", "staff"))])
 def delete_tax(
     tax_id: uuid.UUID,
     hard_delete: bool = Query(False, description="Permanently delete from database (false deactivates)"),
@@ -88,7 +90,7 @@ def delete_tax(
     }
 
 
-@router.patch("/{tax_id}/status", response_model=TaxResponse, summary="Update tax active status")
+@router.patch("/{tax_id}/status", response_model=TaxResponse, summary="Update tax active status", dependencies=[Depends(require_roles("admin", "staff"))])
 def update_tax_status(
     tax_id: uuid.UUID,
     status_in: TaxStatusUpdate,
@@ -107,6 +109,7 @@ def update_tax_status(
     "/calculate",
     response_model=TaxCalculationResponse,
     summary="Calculate tax amount and gross total with Decimal precision",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def calculate_tax(request: TaxCalculationRequest, db: Session = Depends(get_db)):
     try:

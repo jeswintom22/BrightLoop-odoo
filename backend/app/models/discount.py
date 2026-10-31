@@ -36,6 +36,9 @@ class Discount(Base):
     minimum_purchase_amount: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), nullable=False, default=Decimal("0.00")
     )
+    min_quantity: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
 
     usage_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     usage_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

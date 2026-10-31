@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.deps import require_roles
 from app.schemas.discount import (
     DiscountCreate,
     DiscountUpdate,
@@ -33,6 +34,7 @@ router = APIRouter(prefix="/discounts", tags=["Discounts"])
     response_model=DiscountResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new discount",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def create_discount(discount_in: DiscountCreate, db: Session = Depends(get_db)):
     """
@@ -77,6 +79,7 @@ def get_discount(discount_id: uuid.UUID, db: Session = Depends(get_db)):
     "/{discount_id}",
     response_model=DiscountResponse,
     summary="Update a discount",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def update_discount(
     discount_id: uuid.UUID,
@@ -93,6 +96,7 @@ def update_discount(
 @router.delete(
     "/{discount_id}",
     summary="Deactivate (soft-delete) a discount",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def delete_discount(
     discount_id: uuid.UUID,
@@ -110,6 +114,7 @@ def delete_discount(
     "/{discount_id}/status",
     response_model=DiscountResponse,
     summary="Activate or deactivate a discount",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def update_discount_status(
     discount_id: uuid.UUID,
@@ -128,6 +133,7 @@ def update_discount_status(
     "/validate",
     response_model=DiscountValidateResponse,
     summary="Validate a discount code (dry-run — no usage increment)",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def validate_discount(
     request: DiscountValidateRequest,
@@ -149,6 +155,7 @@ def validate_discount(
     "/apply",
     response_model=DiscountValidateResponse,
     summary="Apply a discount code (increments usage_count atomically)",
+    dependencies=[Depends(require_roles("admin", "staff"))],
 )
 def apply_discount(
     request: DiscountApplyRequest,
