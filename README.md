@@ -31,3 +31,23 @@ A unified software platform that runs the full life of a subscription businessâ€
 - **Email**: Resend (for notifications and password resets)
 - **Deployment**: Vercel (Frontend) & Render (Backend)
 - **CI/CD**: GitHub Actions
+
+## Run Locally
+
+The repository has one frontend (`frontend/`) and one API (`backend/`). Start the API from the repository root:
+
+```powershell
+python -m pip install -r backend/requirements.txt
+python -m uvicorn app.main:app --app-dir backend --reload
+```
+
+The API health check is available at `http://localhost:8000/api/v1/health`.
+In another terminal, start the frontend:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend is available at `http://localhost:3000`.
