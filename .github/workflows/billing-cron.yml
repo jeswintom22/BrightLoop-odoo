@@ -48,3 +48,22 @@ jobs:
           done
           echo "::error::billing did not finish after 20 batches"
           exit 1
+      - name: Trigger scheduled notifications
+        shell: bash
+        run: |
+          set -euo pipefail
+          response=$(curl -sS -w '\n%{http_code}' -X POST \
+            "$API_BASE_URL/api/v1/internal/notifications/run" \
+            -H "X-Internal-Token: $INTERNAL_JOB_TOKEN")
+          http_code=$(tail -n1 <<< "$response")
+          body=$(head -n -1 <<< "$response")
+          echo "$body"
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::notification run failed with HTTP $http_code"
+            exit 1
+          fi
+          failed=$(jq -r '.failed // 0' <<< "$body")
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::$failed notification(s) failed; check notification history"
+            exit 1
+          fi

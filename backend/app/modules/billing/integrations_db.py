@@ -274,6 +274,17 @@ class DbSubscriptionProvider:
                 return None
             return self._view(row, self._items(session, [row["id"]]).get(row["id"], []))
 
+    def all_subscriptions(self) -> list[SubscriptionBillingView]:
+        with self._sf() as session:
+            rows = session.execute(
+                sa.select(_SUBSCRIPTIONS_TABLE).order_by(_SUBSCRIPTIONS_TABLE.c.id)
+            ).mappings().all()
+            items = self._items(session, [row["id"] for row in rows])
+            return [
+                self._view(row, items.get(row["id"], []))
+                for row in rows
+            ]
+
     def get_due_subscriptions(self, as_of, limit=200, offset=0):
         with self._sf() as session:
             rows = session.execute(

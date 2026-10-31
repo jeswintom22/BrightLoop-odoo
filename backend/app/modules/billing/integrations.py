@@ -72,6 +72,8 @@ class SubscriptionBillingView:
 
 
 class SubscriptionProvider(Protocol):
+    def all_subscriptions(self) -> list[SubscriptionBillingView]: ...
+
     def get_subscription_view(
         self, subscription_id: uuid.UUID
     ) -> SubscriptionBillingView | None: ...

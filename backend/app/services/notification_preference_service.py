@@ -22,7 +22,7 @@ CATEGORY_FIELDS = {
 class NotificationPreferenceService:
     @staticmethod
     def get_or_create(
-        db: Session, customer_id: uuid.UUID
+        db: Session, customer_id: uuid.UUID, *, commit: bool = True
     ) -> NotificationPreference:
         preference = db.scalar(
             select(NotificationPreference).where(
@@ -35,7 +35,9 @@ class NotificationPreferenceService:
         preference = NotificationPreference(customer_id=customer_id)
         db.add(preference)
         try:
-            db.commit()
+            db.flush()
+            if commit:
+                db.commit()
         except IntegrityError:
             db.rollback()
             preference = db.scalar(
@@ -46,7 +48,8 @@ class NotificationPreferenceService:
             if preference is None:
                 raise
             return preference
-        db.refresh(preference)
+        if commit:
+            db.refresh(preference)
         return preference
 
     @staticmethod
@@ -68,6 +71,8 @@ class NotificationPreferenceService:
         customer_id: uuid.UUID,
         notification_type: str,
         channel: str,
+        *,
+        commit_preference: bool = True,
     ) -> bool:
         channel_field = CHANNEL_FIELDS.get(channel)
         category_field = CATEGORY_FIELDS.get(notification_type)
@@ -77,7 +82,9 @@ class NotificationPreferenceService:
                 "Unsupported notification type or channel",
                 400,
             )
-        preference = NotificationPreferenceService.get_or_create(db, customer_id)
+        preference = NotificationPreferenceService.get_or_create(
+            db, customer_id, commit=commit_preference
+        )
         return bool(
             getattr(preference, channel_field)
             and getattr(preference, category_field)

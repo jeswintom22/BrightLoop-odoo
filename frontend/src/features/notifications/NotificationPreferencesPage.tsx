@@ -108,6 +108,9 @@ export default function NotificationPreferencesPage() {
         <p className="mt-1 text-sm text-slate-600">
           Choose which updates you receive and where they are delivered.
         </p>
+        <p className="mt-1 text-xs text-slate-500">
+          Essential transaction confirmations may still be sent when required.
+        </p>
       </div>
 
       {query.isLoading && (
