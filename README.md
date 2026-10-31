@@ -36,7 +36,9 @@ A unified software platform that runs the full life of a subscription business�
 ## 📁 Repository Layout
 
 ```
-frontend/   React + Vite + TypeScript + Tailwind (P4 finance UI so far)
+frontend/       React + Vite + TypeScript + Tailwind — canonical UI (P4 finance so far)
+frontend-next/  Next.js + Supabase-JS auth UI (P1) — parked until the team
+                picks one frontend stack; not part of the build/deploy
 backend/    FastAPI modular monolith
   app/core/            shared plumbing: config, database (Base), errors, pagination
   app/models/          P2 — catalog tables (products, plans, taxes, discounts)

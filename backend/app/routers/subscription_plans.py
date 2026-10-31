@@ -1,137 +1,131 @@
-"""P2 — subscription plan CRUD. Reads open to admin/staff/customer (customers
-browse plans in the portal); writes admin/staff only."""
-
-import math
+import uuid
 from typing import Optional
-
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, or_, select
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-
-from app.core.errors import AppError
 from app.db.session import get_db
-from app.deps import CurrentUser, require_roles
-from app.models.subscription_plan import SubscriptionPlan
+from app.services.subscription_plan_service import SubscriptionPlanService
 from app.schemas.subscription_plan import (
     SubscriptionPlanCreate,
-    SubscriptionPlanListResponse,
-    SubscriptionPlanResponse,
     SubscriptionPlanUpdate,
+    SubscriptionPlanStatusUpdate,
+    SubscriptionPlanResponse,
+    SubscriptionPlanListResponse,
 )
 
-router = APIRouter(prefix="/subscription-plans", tags=["Subscription Plans"])
-
-READ = Depends(require_roles("admin", "staff", "customer"))
-WRITE = Depends(require_roles("admin", "staff"))
+router = APIRouter(prefix="/plans", tags=["Subscription Plans"])
 
 
-@router.get("", response_model=SubscriptionPlanListResponse)
+def _format_plan_response(plan) -> SubscriptionPlanResponse:
+    """Helper to attach human-readable product and variant names."""
+    res = SubscriptionPlanResponse.model_validate(plan)
+    if plan.product:
+        res.product_name = plan.product.name
+    if plan.variant:
+        res.variant_name = plan.variant.name
+    return res
+
+
+@router.post(
+    "",
+    response_model=SubscriptionPlanResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a subscription plan",
+)
+def create_plan(plan_in: SubscriptionPlanCreate, db: Session = Depends(get_db)):
+    try:
+        plan = SubscriptionPlanService.create_plan(db, plan_in)
+        return _format_plan_response(plan)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.get(
+    "",
+    response_model=SubscriptionPlanListResponse,
+    summary="List subscription plans with filters and pagination",
+)
 def list_plans(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
-    billing_frequency: Optional[str] = None,
-    status: Optional[str] = None,
-    available_only: bool = Query(
-        False, description="Only plans inside their availability window"
-    ),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    status: Optional[str] = Query(None, description="Filter by status (active, inactive, archived)"),
+    billing_frequency: Optional[str] = Query(None, description="Filter by frequency (daily, weekly, monthly, yearly)"),
+    product_id: Optional[int] = Query(None, description="Filter by associated product ID"),
     db: Session = Depends(get_db),
-    _: CurrentUser = READ,
 ):
-    q = select(SubscriptionPlan)
-    count_q = select(func.count()).select_from(SubscriptionPlan)
-
-    if search and search.strip():
-        like = f"%{search.strip()}%"
-        q = q.where(or_(SubscriptionPlan.name.ilike(like),
-                        SubscriptionPlan.description.ilike(like)))
-        count_q = count_q.where(or_(SubscriptionPlan.name.ilike(like),
-                                    SubscriptionPlan.description.ilike(like)))
-    if billing_frequency:
-        q = q.where(SubscriptionPlan.billing_frequency == billing_frequency)
-        count_q = count_q.where(SubscriptionPlan.billing_frequency == billing_frequency)
-    if status:
-        q = q.where(SubscriptionPlan.status == status)
-        count_q = count_q.where(SubscriptionPlan.status == status)
-    if available_only:
-        from datetime import date as _date
-        today = _date.today()
-        q = q.where(
-            SubscriptionPlan.status == "active",
-            SubscriptionPlan.start_date <= today,
-            or_(SubscriptionPlan.end_date.is_(None),
-                SubscriptionPlan.end_date >= today),
-        )
-        count_q = count_q.where(
-            SubscriptionPlan.status == "active",
-            SubscriptionPlan.start_date <= today,
-            or_(SubscriptionPlan.end_date.is_(None),
-                SubscriptionPlan.end_date >= today),
-        )
-
-    total = db.scalar(count_q) or 0
-    rows = db.scalars(
-        q.order_by(SubscriptionPlan.id.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    ).all()
+    items, total, pages = SubscriptionPlanService.get_plans(
+        db=db,
+        page=page,
+        page_size=page_size,
+        status=status,
+        billing_frequency=billing_frequency,
+        product_id=product_id,
+    )
     return SubscriptionPlanListResponse(
-        items=[SubscriptionPlanResponse.model_validate(r) for r in rows],
-        total=total, page=page, page_size=page_size,
-        pages=math.ceil(total / page_size) if total else 0,
+        items=[_format_plan_response(p) for p in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages,
     )
 
 
-@router.get("/{plan_id}", response_model=SubscriptionPlanResponse)
-def get_plan(
-    plan_id: int,
-    db: Session = Depends(get_db),
-    _: CurrentUser = READ,
-):
-    plan = db.get(SubscriptionPlan, plan_id)
-    if plan is None:
-        raise AppError("NOT_FOUND", "Plan not found", 404)
-    return plan
+@router.get("/{plan_id}", response_model=SubscriptionPlanResponse, summary="Retrieve a specific plan")
+def get_plan(plan_id: uuid.UUID, db: Session = Depends(get_db)):
+    plan = SubscriptionPlanService.get_plan_by_id(db, plan_id)
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Subscription plan '{plan_id}' not found."
+        )
+    return _format_plan_response(plan)
 
 
-@router.post("", response_model=SubscriptionPlanResponse, status_code=201)
-def create_plan(
-    body: SubscriptionPlanCreate,
-    db: Session = Depends(get_db),
-    _: CurrentUser = WRITE,
-):
-    plan = SubscriptionPlan(**body.model_dump())
-    db.add(plan)
-    db.commit()
-    db.refresh(plan)
-    return plan
-
-
-@router.put("/{plan_id}", response_model=SubscriptionPlanResponse)
+@router.put("/{plan_id}", response_model=SubscriptionPlanResponse, summary="Update an existing plan")
 def update_plan(
-    plan_id: int,
-    body: SubscriptionPlanUpdate,
-    db: Session = Depends(get_db),
-    _: CurrentUser = WRITE,
+    plan_id: uuid.UUID,
+    plan_in: SubscriptionPlanUpdate,
+    db: Session = Depends(get_db)
 ):
-    plan = db.get(SubscriptionPlan, plan_id)
-    if plan is None:
-        raise AppError("NOT_FOUND", "Plan not found", 404)
-    for f, v in body.model_dump(exclude_unset=True).items():
-        setattr(plan, f, v)
-    db.commit()
-    db.refresh(plan)
-    return plan
+    try:
+        plan = SubscriptionPlanService.update_plan(db, plan_id, plan_in)
+        if not plan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Subscription plan '{plan_id}' not found."
+            )
+        return _format_plan_response(plan)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
-@router.delete("/{plan_id}", status_code=204)
-def archive_plan(
-    plan_id: int,
-    db: Session = Depends(get_db),
-    _: CurrentUser = WRITE,
+@router.delete("/{plan_id}", summary="Safely archive or delete a plan")
+def delete_plan(
+    plan_id: uuid.UUID,
+    hard_delete: bool = Query(False, description="Permanently delete from database (false archives)"),
+    db: Session = Depends(get_db)
 ):
-    plan = db.get(SubscriptionPlan, plan_id)
-    if plan is None:
-        raise AppError("NOT_FOUND", "Plan not found", 404)
-    plan.status = "archived"  # safe delete — preserves subscription history
-    db.commit()
+    success = SubscriptionPlanService.delete_plan(db, plan_id, hard_delete=hard_delete)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Subscription plan '{plan_id}' not found."
+        )
+    return {
+        "success": True,
+        "message": f"Plan '{plan_id}' {'permanently deleted' if hard_delete else 'archived'} successfully."
+    }
+
+
+@router.patch("/{plan_id}/status", response_model=SubscriptionPlanResponse, summary="Update plan status")
+def update_plan_status(
+    plan_id: uuid.UUID,
+    status_in: SubscriptionPlanStatusUpdate,
+    db: Session = Depends(get_db)
+):
+    plan = SubscriptionPlanService.update_plan_status(db, plan_id, status_in.status)
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Subscription plan '{plan_id}' not found."
+        )
+    return _format_plan_response(plan)
