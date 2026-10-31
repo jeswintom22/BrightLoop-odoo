@@ -28,7 +28,7 @@ def plan(session, name="Pro Monthly", price="1000.00", frequency="monthly", prod
         product_id=product.id,
         price=Decimal(price),
         billing_frequency=frequency,
-        start_date=business_date() - dt.timedelta(days=365),
+        available_from=business_date() - dt.timedelta(days=365),
         status="active",
     )
     session.add(p)

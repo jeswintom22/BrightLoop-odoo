@@ -100,9 +100,9 @@ export default function InvoiceDetailPage() {
         ? "Failed to record payment"
         : null;
 
-  if (invoice.isLoading) return <p className="text-slate-500">Loading…</p>;
+  if (invoice.isLoading) return <p className="text-cream0">Loading…</p>;
   if (invoice.isError || !inv)
-    return <p className="text-red-600">Invoice not found.</p>;
+    return <p className="text-danger">Invoice not found.</p>;
 
   const canPay = inv.status === "confirmed";
 
@@ -110,14 +110,14 @@ export default function InvoiceDetailPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link to="/invoices" className="text-sm text-slate-500 hover:underline">
+          <Link to="/invoices" className="text-sm text-cream0 hover:underline">
             ← Invoices
           </Link>
           <h1 className="flex items-center gap-3 font-mono text-xl font-bold">
             {inv.invoice_number}
             <StatusBadge status={inv.status} />
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-cream0">
             {inv.customer_name ?? inv.customer_id} · issued{" "}
             {formatDate(inv.issue_date)} · due {formatDate(inv.due_date)} · period{" "}
             {formatDate(inv.period_start)} — {formatDate(inv.period_end)}
@@ -158,7 +158,7 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
       {email.data && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-muted">
           {email.data.sent
             ? "Invoice emailed."
             : `Email not sent (${email.data.reason ?? "unknown"}).`}
@@ -209,7 +209,7 @@ export default function InvoiceDetailPage() {
               <span>Total</span>
               <span>{formatMoney(inv.total_amount, inv.currency)}</span>
             </div>
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-ink-muted">
               <span>Paid</span>
               <span>{formatMoney(inv.amount_paid, inv.currency)}</span>
             </div>
@@ -251,7 +251,7 @@ export default function InvoiceDetailPage() {
                 ))}
                 {inv.payments.length === 0 && (
                   <TR>
-                    <TD colSpan={5} className="text-center text-slate-500">
+                    <TD colSpan={5} className="text-center text-cream0">
                       No payments recorded.
                     </TD>
                   </TR>
@@ -282,7 +282,7 @@ export default function InvoiceDetailPage() {
                     {...register("amount")}
                   />
                   {errors.amount && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-danger">
                       {errors.amount.message}
                     </p>
                   )}
@@ -309,10 +309,10 @@ export default function InvoiceDetailPage() {
                   {recordPayment.isPending ? "Recording…" : "Record payment"}
                 </Button>
                 {paymentError && (
-                  <p className="text-sm text-red-600">{paymentError}</p>
+                  <p className="text-sm text-danger">{paymentError}</p>
                 )}
                 {recordPayment.isSuccess && (
-                  <p className="text-sm text-emerald-700">Payment recorded.</p>
+                  <p className="text-sm text-success">Payment recorded.</p>
                 )}
               </form>
             </CardContent>

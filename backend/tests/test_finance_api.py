@@ -54,6 +54,7 @@ def test_copilot_endpoint_answers(client, session):
     c = customer(session)
     inv = invoice(session, customer=c, total="321.00", issue_date=today)
     payment(session, invoice=inv, amount="321.00")
+    session.commit()  # API sessions must see committed rows (shared sqlite txn)
 
     r = client.post(
         "/api/v1/finance-intelligence/copilot",
@@ -98,6 +99,7 @@ def test_risks_and_explain_endpoints(client, session):
     today = business_date()
     c = customer(session, name="Risky Biz")
     invoice(session, customer=c, total="15000.00", due_date=today - dt.timedelta(days=10))
+    session.commit()
 
     r = client.get("/api/v1/finance-intelligence/risks")
     assert r.status_code == 200
@@ -119,6 +121,7 @@ def test_risks_severity_filter(client, session):
     today = business_date()
     c = customer(session)
     invoice(session, customer=c, total="15000.00", due_date=today - dt.timedelta(days=10))
+    session.commit()
 
     r = client.get("/api/v1/finance-intelligence/risks?severity=high")
     assert r.status_code == 200

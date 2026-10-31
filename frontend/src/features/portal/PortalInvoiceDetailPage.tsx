@@ -14,24 +14,24 @@ export default function PortalInvoiceDetailPage() {
     queryFn: () => api<InvoiceDetail>(`/portal/invoices/${id}`),
   });
 
-  if (invoice.isLoading) return <p className="py-10 text-center text-slate-500">Loading…</p>;
+  if (invoice.isLoading) return <p className="py-10 text-center text-cream0">Loading…</p>;
   if (invoice.error || !invoice.data)
-    return <p className="py-10 text-center text-red-600">Invoice not found.</p>;
+    return <p className="py-10 text-center text-danger">Invoice not found.</p>;
   const inv = invoice.data;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{inv.invoice_number}</h1>
-        <Link to="/portal" className="text-sm text-slate-600 hover:underline">← Back</Link>
+        <Link to="/portal" className="text-sm text-ink-muted hover:underline">← Back</Link>
       </div>
       <Card>
         <CardContent className="grid grid-cols-2 gap-4 py-4 sm:grid-cols-4">
-          <div><p className="text-xs text-slate-500">Status</p><StatusBadge status={inv.status} /></div>
-          <div><p className="text-xs text-slate-500">Issued</p><p>{formatDate(inv.issue_date)}</p></div>
-          <div><p className="text-xs text-slate-500">Due</p><p>{formatDate(inv.due_date)}</p></div>
+          <div><p className="text-xs text-cream0">Status</p><StatusBadge status={inv.status} /></div>
+          <div><p className="text-xs text-cream0">Issued</p><p>{formatDate(inv.issue_date)}</p></div>
+          <div><p className="text-xs text-cream0">Due</p><p>{formatDate(inv.due_date)}</p></div>
           <div>
-            <p className="text-xs text-slate-500">Balance</p>
+            <p className="text-xs text-cream0">Balance</p>
             <p className="font-semibold">{formatMoney(inv.outstanding, inv.currency)}</p>
           </div>
         </CardContent>

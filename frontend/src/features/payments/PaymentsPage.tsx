@@ -94,7 +94,7 @@ export default function PaymentsPage() {
                 <TD className="font-mono text-xs">{p.payment_reference}</TD>
                 <TD>
                   <Link
-                    className="text-blue-600 hover:underline"
+                    className="text-sage-deep hover:underline"
                     to={`/invoices/${p.invoice_id}`}
                   >
                     {p.invoice_id.slice(0, 8)}…
@@ -127,14 +127,14 @@ export default function PaymentsPage() {
             ))}
             {list.data?.items.length === 0 && (
               <TR>
-                <TD colSpan={7} className="py-8 text-center text-slate-500">
+                <TD colSpan={7} className="py-8 text-center text-cream0">
                   No payments match these filters.
                 </TD>
               </TR>
             )}
           </TBody>
         </Table>
-        <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
+        <div className="mt-3 flex items-center justify-between text-sm text-ink-muted">
           <span>
             {list.data?.total ?? 0} payments · page {page} of {totalPages}
           </span>

@@ -29,7 +29,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Brightloop — Sign in</CardTitle>
@@ -50,15 +50,15 @@ export default function LoginPage() {
                 value={password} onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             <Button type="submit" className="w-full" disabled={busy}>
               {busy ? "Signing in…" : "Sign in"}
             </Button>
             <div className="flex justify-between text-sm">
-              <Link to="/forgot-password" className="text-slate-600 hover:underline">
+              <Link to="/forgot-password" className="text-ink-muted hover:underline">
                 Forgot password?
               </Link>
-              <Link to="/register" className="text-slate-600 hover:underline">
+              <Link to="/register" className="text-ink-muted hover:underline">
                 Create account
               </Link>
             </div>

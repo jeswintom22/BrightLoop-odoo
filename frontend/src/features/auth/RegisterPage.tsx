@@ -31,7 +31,7 @@ export default function RegisterPage() {
     setForm({ ...form, [k]: e.target.value });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Create your account</CardTitle>
@@ -49,15 +49,15 @@ export default function RegisterPage() {
             <div className="space-y-1">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required value={form.password} onChange={set("password")} />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-cream0">
                 More than 8 characters, with uppercase, lowercase and a special character.
               </p>
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             <Button type="submit" className="w-full" disabled={busy}>
               {busy ? "Creating…" : "Create account"}
             </Button>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-muted">
               Already registered?{" "}
               <Link to="/login" className="hover:underline">Sign in</Link>
             </p>

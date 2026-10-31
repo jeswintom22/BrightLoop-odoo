@@ -57,4 +57,7 @@ export const resetPassword = (token: string, new_password: string) =>
   });
 
 export const me = () => api<User>("/auth/me");
-export const logout = () => setToken(null);
+export const logout = () => {
+  setToken(null);
+  window.location.href = "/login";
+};

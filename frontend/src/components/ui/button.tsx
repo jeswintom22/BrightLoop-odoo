@@ -3,15 +3,15 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "../../lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/60 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-slate-900 text-white hover:bg-slate-800",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
-        outline: "border border-slate-300 bg-white hover:bg-slate-50",
-        secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200",
-        ghost: "hover:bg-slate-100",
+        default: "bg-sage text-ink hover:bg-sage-deep hover:text-cream-card",
+        destructive: "bg-danger text-cream-card hover:bg-danger/90",
+        outline: "border border-line bg-cream-card text-ink hover:bg-sage-faint",
+        secondary: "bg-sage-soft text-ink hover:bg-sage/50",
+        ghost: "text-ink-muted hover:bg-sage-faint hover:text-ink",
       },
       size: {
         default: "h-9 px-4 py-2",

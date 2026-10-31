@@ -26,14 +26,14 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
       <Card className="w-full max-w-sm">
         <CardHeader><CardTitle className="text-xl">Reset password</CardTitle></CardHeader>
         <CardContent>
           {message ? (
             <div className="space-y-4">
-              <p className="text-sm text-slate-700">{message}</p>
-              <Link to="/login" className="text-sm text-slate-600 hover:underline">
+              <p className="text-sm text-ink">{message}</p>
+              <Link to="/login" className="text-sm text-ink-muted hover:underline">
                 Back to sign in
               </Link>
             </div>
@@ -78,7 +78,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
       <Card className="w-full max-w-sm">
         <CardHeader><CardTitle className="text-xl">Choose a new password</CardTitle></CardHeader>
         <CardContent>
@@ -88,7 +88,7 @@ export function ResetPasswordPage() {
               <Input id="pw" type="password" required value={pw}
                 onChange={(e) => setPw(e.target.value)} />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             <Button type="submit" className="w-full" disabled={busy || !token}>
               {busy ? "Saving…" : "Reset password"}
             </Button>
