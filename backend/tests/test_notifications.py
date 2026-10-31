@@ -9,11 +9,13 @@ from app.core.errors import AppError
 from app.deps import CurrentUser
 from app.main import create_app
 from app.models.notification import Notification
+from app.modules.auth.models import Customer, User
 from app.services.notification_preference_service import (
     NotificationPreferenceService,
     should_send_notification,
 )
 from app.services.notification_service import NotificationService
+from app.deps import get_notification_customer_id
 
 
 CUSTOMER_ID = uuid.UUID("00000000-0000-0000-0000-000000000101")
@@ -50,6 +52,29 @@ def _create_notification(db, customer_id=CUSTOMER_ID, **overrides):
     return NotificationService.create_notification(
         db, customer_id=customer_id, **values
     )
+
+
+def test_customer_notification_scope_uses_linked_billing_customer(session):
+    user = User(
+        email="customer-link@example.com",
+        hashed_password="hashed",
+        full_name="Linked Customer",
+        role="customer",
+    )
+    session.add(user)
+    session.flush()
+    customer = Customer(
+        user_id=user.id,
+        name=user.full_name,
+        email=user.email,
+    )
+    session.add(customer)
+    session.commit()
+
+    assert get_notification_customer_id(
+        session,
+        CurrentUser(id=user.id, email=user.email, roles=["customer"]),
+    ) == customer.id
 
 
 def test_notification_create_list_and_filters(session, notification_client):

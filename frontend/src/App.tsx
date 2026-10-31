@@ -54,6 +54,8 @@ const STAFF_NAV = [
 
 const CUSTOMER_NAV = [
   { to: "/portal", label: "My account", icon: User, end: true },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/notification-preferences", label: "Preferences", icon: Settings },
 ];
 
 function useUser() {
@@ -178,8 +180,8 @@ export default function App() {
                     <Route path="/invoices/:id" element={<StaffOnly><InvoiceDetailPage /></StaffOnly>} />
                     <Route path="/payments" element={<StaffOnly><PaymentsPage /></StaffOnly>} />
                     <Route path="/billing" element={<StaffOnly><BillingPage /></StaffOnly>} />
-                    <Route path="/notifications" element={<StaffOnly><NotificationCenterPage /></StaffOnly>} />
-                    <Route path="/notification-preferences" element={<StaffOnly><NotificationPreferencesPage /></StaffOnly>} />
+                    <Route path="/notifications" element={<NotificationCenterPage />} />
+                    <Route path="/notification-preferences" element={<NotificationPreferencesPage />} />
                     <Route path="/notification-admin" element={<AdminOnly><NotificationAdminPage /></AdminOnly>} />
                     <Route path="/portal" element={<CustomerOnly><PortalPage /></CustomerOnly>} />
                     <Route path="/portal/invoices/:id" element={<CustomerOnly><PortalInvoiceDetailPage /></CustomerOnly>} />

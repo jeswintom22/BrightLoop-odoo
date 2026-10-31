@@ -4,7 +4,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.deps import CurrentUser, get_current_user, get_db
+from app.deps import (
+    CurrentUser,
+    get_current_user,
+    get_db,
+    get_notification_customer_id,
+)
 from app.schemas.notification import (
     NotificationListResponse,
     NotificationResponse,
@@ -29,9 +34,10 @@ def list_notifications(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
+    customer_id = get_notification_customer_id(db, user)
     items, total = NotificationService.list_notifications(
         db,
-        customer_id=user.id,
+        customer_id=customer_id,
         page=page,
         page_size=page_size,
         notification_type=notification_type,
@@ -51,8 +57,9 @@ def unread_count(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
+    customer_id = get_notification_customer_id(db, user)
     return UnreadCountResponse(
-        unread_count=NotificationService.unread_count(db, user.id)
+        unread_count=NotificationService.unread_count(db, customer_id)
     )
 
 
@@ -61,8 +68,9 @@ def mark_all_read(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
+    customer_id = get_notification_customer_id(db, user)
     return {
-        "updated_count": NotificationService.mark_all_read(db, user.id),
+        "updated_count": NotificationService.mark_all_read(db, customer_id),
     }
 
 
@@ -76,7 +84,8 @@ def get_notification(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    return NotificationService.get_notification(db, user.id, notification_id)
+    customer_id = get_notification_customer_id(db, user)
+    return NotificationService.get_notification(db, customer_id, notification_id)
 
 
 @router.patch(
@@ -89,7 +98,8 @@ def mark_notification_read(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    return NotificationService.mark_read(db, user.id, notification_id)
+    customer_id = get_notification_customer_id(db, user)
+    return NotificationService.mark_read(db, customer_id, notification_id)
 
 
 @router.delete(
@@ -103,5 +113,6 @@ def delete_notification(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    NotificationService.delete_notification(db, user.id, notification_id)
+    customer_id = get_notification_customer_id(db, user)
+    NotificationService.delete_notification(db, customer_id, notification_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

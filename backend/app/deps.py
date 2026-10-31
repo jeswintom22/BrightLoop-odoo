@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 
 import jwt
+import sqlalchemy as sa
 from fastapi import Depends, Header, Request
 from sqlalchemy.orm import Session
 
@@ -63,6 +64,24 @@ def get_current_user(
         email=str(claims.get("email", "")),
         roles=list(claims.get("roles", [])),
     )
+
+
+def get_notification_customer_id(db: Session, user: CurrentUser) -> uuid.UUID:
+    if "customer" not in user.roles:
+        return user.id
+
+    from .modules.auth.models import Customer
+
+    customer_id = db.scalar(
+        sa.select(Customer.id).where(Customer.user_id == user.id)
+    )
+    if customer_id is None:
+        raise AppError(
+            "CUSTOMER_NOT_FOUND",
+            "Customer account is not linked to a billing customer",
+            404,
+        )
+    return customer_id
 
 
 def require_roles(*roles: str):
