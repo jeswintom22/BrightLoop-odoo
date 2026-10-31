@@ -1,86 +1,85 @@
-# BrightLoop-odoo
+# BrightLoop Odoo
 
-A unified software platform that runs the full life of a subscription business—from setting up products and plans to sending invoices, collecting payments, and reporting revenue. Built for the 8-hour Make-a-thon.
+**BrightLoop Odoo** is an enterprise-grade Billing, Subscription Management, and Financial Intelligence platform built with a modern decoupled architecture. It combines a robust **FastAPI** backend with a high-performance **React / Next.js** frontend, offering real-time financial analytics, automated billing runs, multi-channel notification engine, and an integrated AI-driven finance copilot.
 
-## 👥 Team Task Distribution
+---
 
-### Person 1 — Authentication & User Management
-- Customer registration and login with secure validation.
-- Role-based access control (Admin, Staff, Customer portal).
-- Admin-only staff creation and password reset workflows.
+## 🏗️ Architecture Overview
 
-### Person 2 — Product, Plans & Pricing
-- Product and variant management (e.g., brand-based pricing add-ons).
-- Subscription plan creation with daily, weekly, monthly, or yearly frequencies.
-- Tax configurations and admin-controlled discount rules.
-
-### Person 3 — Quotations & Subscription Management
-- Quotation templates and custom offer lines with validity periods.
-- Seamless conversion of confirmed quotations into active subscriptions.
-- Unique subscription numbering and lifecycle management (Draft → Quotation → Confirmed → Active → Closed, plus pause/renew controls).
-
-### Person 4 — Billing, Payments & Dashboard
-- Automated invoice generation from active subscriptions on billing days.
-- Payment recording, outstanding balance tracking, and overdue invoice chasing.
-- Comprehensive finance dashboard tracking active subscriptions, revenue, and receivables.
-
-## 🛠️ Tech Stack
-- **Frontend**: React + Vite, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, Recharts, React Hook Form, Zod
-- **Backend**: FastAPI, Python, Pydantic v2, SQLAlchemy 2, Alembic
-- **Database**: Supabase PostgreSQL
-- **Email**: Resend (for notifications and password resets)
-- **Reports**: ReportLab (invoice PDFs)
-- **Deployment**: Render Static Site (frontend) & Render Web Service (backend)
-- **CI/CD**: GitHub Actions
-
-## 📁 Repository Layout
+The application follows a modular, domain-driven monorepo architecture:
 
 ```
-frontend/       React + Vite + TypeScript + Tailwind — canonical UI (P4 finance so far)
-frontend-next/  Next.js + Supabase-JS auth UI (P1) — parked until the team
-                picks one frontend stack; not part of the build/deploy
-backend/    FastAPI modular monolith
-  app/core/            shared plumbing: config, database (Base), errors, pagination
-  app/models/          P2 — catalog tables (products, plans, taxes, discounts)
-  app/modules/billing/ P4 — invoices, payments, billing runs, dashboard
-  alembic/             single migration tree for the whole monolith
-docs/       architecture.md — billing module technical design (P4)
-.github/    workflows/billing-cron.yml — scheduled recurring billing (P4)
+BrightLoop-odoo/
+├── backend/                  # FastAPI Application Core
+│   ├── alembic/              # Database schema migrations
+│   ├── app/
+│   │   ├── api/              # Core API endpoints & health checks
+│   │   ├── core/             # Configuration, database session, errors, time & pagination
+│   │   ├── models/           # Declarative database models (Products, Plans, Taxes, Notifications)
+│   │   ├── modules/          # Domain-driven feature modules
+│   │   │   ├── analytics/    # Product & subscription metrics
+│   │   │   ├── auth/         # Authentication, user management, and portal access
+│   │   │   ├── billing/      # Invoices, payments, PDF generation, and accounting integrations
+│   │   │   ├── finance_intelligence/ # MRR/ARR, forecasting, risk detection & AI Copilot
+│   │   │   └── subscriptions/# Subscription lifecycle & automated workflows
+│   │   ├── routers/          # Framework route handlers
+│   │   └── services/         # Business logic layer
+│   └── tests/                # Automated unit & integration test suites
+├── frontend/                 # React (Vite + Tailwind CSS + Shadcn UI) dashboard
+├── frontend-next/            # Next.js App Router application (Portal & Web views)
+├── docs/                     # Architecture & audit documentation
+└── render.yaml               # Cloud deployment configuration
 ```
 
-## 🚀 Quickstart
+---
 
-### Backend
+## ✨ Key Features
 
-```bash
-cd backend
-python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env        # defaults work out of the box (SQLite + dev auth)
-uvicorn app.main:app --reload --port 8000
-```
+### 1. Subscription & Billing Lifecycle
+* **Subscription Management:** Automated recurring billing cycles, plan upgrades/downgrades, and status tracking.
+* **Invoicing & Payments:** Flexible invoicing engine with automatic PDF generation, tax calculations, dynamic discounting, and payment processing hooks.
+* **Automated Cron Workflows:** GitHub Actions / Background tasks for scheduled billing runs and notification retries.
 
-- API docs: http://localhost:8000/docs
-- `AUTH_DEV_BYPASS=true` (default) acts as a finance admin — no JWT needed in dev.
-- `USE_STUB_PROVIDERS=true` seeds demo customers/subscriptions so the billing
-  module runs end-to-end before P1–P3 modules land.
-- With Postgres (Supabase), set `DATABASE_URL` and run `alembic upgrade head`.
+### 2. Financial Intelligence & AI Copilot
+* **MRR & ARR Analytics:** Real-time metrics for Monthly Recurring Revenue (MRR), Annual Recurring Revenue (ARR), and churn rates.
+* **Financial Forecasting:** Deterministic analytics and forecasting models computed in Python/SQL.
+* **AI Copilot & Risk Detection:** OpenAI-powered financial insights, revenue leak detection, and automated risk summaries for active subscriptions.
 
-### Frontend
+### 3. Multi-Channel Notifications
+* Granular notification delivery pipeline supporting administrative webhooks, customer emails, and user notification preference management.
 
-```bash
-cd frontend
-npm install
-npm run dev        # http://localhost:5173, proxies /api → :8000
-```
+---
 
-### Tests
+## 🚀 Tech Stack
 
-```bash
-cd backend && python -m pytest
-```
+* **Backend:** Python 3.10+, FastAPI, SQLAlchemy, Alembic, Pydantic, PostgreSQL (`postgres_fdw`, `jsonb`), Pytest.
+* **Frontend:** React, Next.js (App Router), TypeScript, Tailwind CSS, Vite.
+* **DevOps & Infrastructure:** GitHub Actions (CI/CD), Docker / Render (`render.yaml`).
 
-## ⏰ Scheduled billing (GitHub Actions)
+---
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+* **Python:** `3.10` or higher
+* **Node.js:** `18.x` or higher
+* **PostgreSQL:** `14+` with native `jsonb` support
+
+---
+
+### Backend Setup
+
+1. **Navigate to the backend folder:**
+   ```bash
+   cd backend
+   ```
+
+2. **Create and activate a virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
 `.github/workflows/billing-cron.yml` calls
 `POST /api/v1/internal/billing/run` daily at 01:00 UTC with the
@@ -105,11 +104,16 @@ endpoints. Production scheduled notifications require the real customer,
 subscription, and pricing providers; email sending is blocked in production
 while stub providers are configured.
 
-## 🚢 Deployment (Render + Supabase)
+4. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   *Update `.env` with your PostgreSQL connection strings, OpenAI API key, and JWT secret key.*
 
-`render.yaml` is a Render **Blueprint**: one web service (`brightloop-api`,
-uvicorn) + one static site (`brightloop-frontend`, Vite build) wired with a
-`/api/*` rewrite to the API.
+5. **Run database migrations:**
+   ```bash
+   alembic upgrade head
+   ```
 
 1. **Supabase**: create a project → Settings → Database → copy the
    *transaction pooler* URI (port 6543) for the web service `DATABASE_URL`;
@@ -125,9 +129,50 @@ uvicorn) + one static site (`brightloop-frontend`, Vite build) wired with a
    `https://brightloop-api.onrender.com`) and `INTERNAL_JOB_TOKEN` (same value
    as the Render env var) for the billing and notification workflows.
 
-### Cross-module providers
+---
 
-`backend/app/deps.py` switches providers via `USE_STUB_PROVIDERS`:
+### Frontend Setup (Vite / React Dashboard)
+
+1. **Navigate to the frontend folder:**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+---
+
+### Frontend-Next Setup (Next.js Application)
+
+1. **Navigate to the Next.js directory:**
+   ```bash
+   cd frontend-next
+   ```
+
+2. **Install dependencies and start server:**
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+---
+
+## 🧪 Running Tests
+
+Execute the full backend unit and integration test suite via `pytest`:
+
+```bash
+cd backend
+pytest
+```
 
 - `true` (default): in-memory demo data — full E2E without P1–P3 tables.
 - `false`: real providers — `DbPricingProvider` reads P2's catalog now
