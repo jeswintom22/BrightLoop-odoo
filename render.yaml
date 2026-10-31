@@ -54,6 +54,21 @@ services:
         value: "300"
       - key: DB_POOL_PRE_PING
         value: "true"
+      # ── Phase 2 (P4): AI Finance Copilot ─────────────────────────────
+      # "none" keeps the grounded template engine — no external LLM calls.
+      # Set "openai" or "gemini" + AI_API_KEY to enable a real model.
+      - key: AI_PROVIDER
+        value: "none"
+      - key: AI_API_KEY
+        sync: false          # set in dashboard when AI_PROVIDER != none
+      - key: AI_MODEL
+        value: gpt-4o-mini   # or gemini-1.5-flash
+      - key: AI_TIMEOUT_S
+        value: "20"
+      - key: AI_MAX_TOKENS
+        value: "800"
+      - key: AI_RATE_LIMIT_PER_MINUTE
+        value: "20"
 
   # ── Frontend: Vite static build ───────────────────────────────────────────
   - type: web
