@@ -1,0 +1,77 @@
+# Render Blueprint — BrightLoop Subscription Management System
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> connect this repo.
+# Set the secret env vars marked "(set in dashboard)" on each service —
+# they are intentionally NOT committed here.
+#
+# Database: Supabase PostgreSQL (DATABASE_URL below). Use the *transaction
+# pooler* URI (port 6543) for the web service; use the *direct* connection
+# (port 5432) when running `alembic upgrade head` manually.
+
+services:
+  # ── Backend: FastAPI (uvicorn) ────────────────────────────────────────────
+  - type: web
+    name: brightloop-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # postgresql+psycopg2://...@...pooler.supabase.com:6543/postgres?sslmode=require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: AUTH_DEV_BYPASS
+        value: "false"       # real JWT auth (P1) in prod
+      - key: INTERNAL_JOB_TOKEN
+        generateValue: true  # same value goes to GitHub Actions secret
+      - key: RESEND_API_KEY
+        sync: false          # leave empty to disable email sending
+      - key: RESEND_FROM
+        value: "Brightloop Billing <billing@brightloop.example>"
+      - key: DEFAULT_CURRENCY
+        value: INR
+      - key: USE_STUB_PROVIDERS
+        value: "true"        # flip to false once P1/P3 tables exist
+      - key: ENVIRONMENT
+        value: production
+      - key: API_V1_STR
+        value: /api/v1
+      - key: FRONTEND_URL
+        sync: false          # https://brightloop-frontend.onrender.com
+      - key: CORS_ORIGINS
+        sync: false          # comma-separated, include the frontend URL
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: DB_MAX_OVERFLOW
+        value: "10"
+      - key: DB_POOL_RECYCLE
+        value: "300"
+      - key: DB_POOL_PRE_PING
+        value: "true"
+
+  # ── Frontend: Vite static build ───────────────────────────────────────────
+  - type: web
+    name: brightloop-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: true
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://brightloop-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Default is same-origin /api/v1 via the rewrite above; set this only if
+      # the API lives on a different host, e.g. https://brightloop-api.onrender.com/api/v1
+      - key: VITE_API_BASE_URL
+        value: /api/v1
