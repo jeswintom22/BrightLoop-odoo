@@ -42,14 +42,14 @@ def get_current_user(
 ) -> CurrentUser:
     """Resolve the caller from a Bearer JWT issued by P1's auth module.
     [PROPOSED] claims shape: {sub: user_id, email, roles: [...]}."""
-    if settings.auth_dev_bypass:
+    if settings.AUTH_DEV_BYPASS:
         return DEV_USER
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise AppError("UNAUTHENTICATED", "Missing bearer token", 401)
     try:
         claims = jwt.decode(
-            auth[7:], settings.jwt_secret, algorithms=[settings.jwt_algorithm]
+            auth[7:], settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
         )
     except jwt.PyJWTError:
         raise AppError("UNAUTHENTICATED", "Invalid token", 401)
@@ -76,7 +76,7 @@ def verify_internal_token(
     settings: Settings = Depends(get_settings),
 ) -> None:
     """Shared-secret auth for /internal/** (GitHub Actions only)."""
-    if not x_internal_token or x_internal_token != settings.internal_job_token:
+    if not x_internal_token or x_internal_token != settings.INTERNAL_JOB_TOKEN:
         raise AppError("FORBIDDEN", "Invalid internal token", 403)
 
 

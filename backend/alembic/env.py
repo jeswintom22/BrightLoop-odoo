@@ -16,7 +16,7 @@ import app.models  # noqa: E402,F401  — P2 catalog tables
 import app.modules.billing.models  # noqa: E402,F401  — P4 billing tables
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -37,8 +37,8 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section) or {}
-    configuration["sqlalchemy.url"] = settings.database_url
-    is_sqlite = settings.database_url.startswith("sqlite")
+    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 
     connectable = engine_from_config(
         configuration,

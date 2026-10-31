@@ -105,7 +105,7 @@ class BillingService:
             due_date=due_date or issue_date + dt.timedelta(days=DEFAULT_DUE_DAYS),
             period_start=period_start,
             period_end=period_end,
-            currency=get_settings().default_currency,
+            currency=get_settings().DEFAULT_CURRENCY,
             subtotal=Decimal("0"),
             tax_total=Decimal("0"),
             discount_total=Decimal("0"),

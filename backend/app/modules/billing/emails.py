@@ -18,13 +18,13 @@ def send_invoice_email(
     subject: str | None = None,
     message: str | None = None,
 ) -> bool:
-    if not settings.resend_api_key:
+    if not settings.RESEND_API_KEY:
         return False
 
-    resend.api_key = settings.resend_api_key
+    resend.api_key = settings.RESEND_API_KEY
     resend.Emails.send(
         {
-            "from": settings.resend_from,
+            "from": settings.RESEND_FROM,
             "to": [to],
             "subject": subject or f"Invoice {invoice.invoice_number} from Brightloop",
             "html": message
