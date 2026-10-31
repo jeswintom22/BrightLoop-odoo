@@ -55,8 +55,18 @@ class Settings(BaseSettings):
 
     DEFAULT_CURRENCY: str = "INR"
 
+    # ── Phase 2 (P4): AI Finance Copilot provider ───────────────────────────
+    # "none" (default, deterministic template engine — no external calls),
+    # "openai" or "gemini". Missing AI_API_KEY degrades to the template path.
+    AI_PROVIDER: str = "none"
+    AI_API_KEY: str = ""
+    AI_MODEL: str = "gpt-4o-mini"          # gemini e.g. "gemini-1.5-flash"
+    AI_TIMEOUT_S: float = 20.0
+    AI_MAX_TOKENS: int = 800
+    AI_RATE_LIMIT_PER_MINUTE: int = 20     # per user, per process
+
     # Until P2/P3 modules land, billing uses in-process stub providers.
-    USE_STUB_PROVIDERS: bool = True
+    USE_STUB_PROVIDERS: bool = False
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

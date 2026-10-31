@@ -36,12 +36,12 @@ A unified software platform that runs the full life of a subscription business�
 ## 📁 Repository Layout
 
 ```
-frontend/   React + Vite + TypeScript + Tailwind (P4 finance and P1 notifications)
+frontend/       React + Vite + TypeScript + Tailwind — canonical UI (P4 finance so far)
+frontend-next/  Next.js + Supabase-JS auth UI (P1) — parked until the team
+                picks one frontend stack; not part of the build/deploy
 backend/    FastAPI modular monolith
   app/core/            shared plumbing: config, database (Base), errors, pagination
-  app/models/          P2 catalog and customer notification tables
-  app/routers/         catalog and customer notification APIs
-  app/services/        catalog and notification business logic
+  app/models/          P2 — catalog tables (products, plans, taxes, discounts)
   app/modules/billing/ P4 — invoices, payments, billing runs, dashboard
   alembic/             single migration tree for the whole monolith
 docs/       architecture.md — billing module technical design (P4)
@@ -74,10 +74,6 @@ npm install
 npm run dev        # http://localhost:5173, proxies /api → :8000
 ```
 
-Set `VITE_API_BASE_URL` in `frontend/.env.local` to point the SPA to a deployed
-API (for example, `https://api.example.com/api/v1`). In development the default
-relative URL is proxied to `http://localhost:8000`.
-
 ### Tests
 
 ```bash
@@ -90,3 +86,35 @@ cd backend && python -m pytest
 `POST /api/v1/internal/billing/run` daily at 01:00 UTC with the
 `X-Internal-Token` header, looping until `remaining = 0`. Required repo
 secrets: `API_BASE_URL`, `INTERNAL_JOB_TOKEN`.
+
+## 🚢 Deployment (Render + Supabase)
+
+`render.yaml` is a Render **Blueprint**: one web service (`brightloop-api`,
+uvicorn) + one static site (`brightloop-frontend`, Vite build) wired with a
+`/api/*` rewrite to the API.
+
+1. **Supabase**: create a project → Settings → Database → copy the
+   *transaction pooler* URI (port 6543) for the web service `DATABASE_URL`;
+   use the *direct* URI (port 5432) when running migrations manually.
+2. **Render**: New → Blueprint → select this repo. Set the `sync: false`
+   secrets in the dashboard: `DATABASE_URL`, `RESEND_API_KEY` (optional),
+   `FRONTEND_URL`, `CORS_ORIGINS`, `VITE_API_BASE_URL` (only if the API is on
+   a different host).
+3. **Migrate**: run `alembic upgrade head` once against the direct URI
+   (Render Shell, CI, or locally with `DATABASE_URL` set).
+4. **Cron**: set GitHub secrets `API_BASE_URL` (e.g.
+   `https://brightloop-api.onrender.com`) and `INTERNAL_JOB_TOKEN` (same value
+   as the Render env var) for the daily billing workflow.
+
+### Cross-module providers
+
+`backend/app/deps.py` switches providers via `USE_STUB_PROVIDERS`:
+
+- `true` (default): in-memory demo data — full E2E without P1–P3 tables.
+- `false`: real providers — `DbPricingProvider` reads P2's catalog now
+  (products → `sales_price`, `tax_id` → `tax_configurations`, `discounts` via
+  `discount_products`); `DbSubscriptionProvider`/`DbCustomerProvider` query
+  the contract tables (`subscriptions`, `subscription_items`, `customers`)
+  described in `docs/architecture.md` §7 — flip the flag once P1/P3 ship.
+
+

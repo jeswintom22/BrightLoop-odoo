@@ -7,6 +7,14 @@ from app.models.discount import Discount, discount_products
 from app.models.notification import Notification
 from app.models.notification_delivery import NotificationDelivery
 from app.models.notification_preference import NotificationPreference
+from app.modules.subscriptions.models import (
+    QuotationTemplate,
+    QuotationTemplateLine,
+    Quotation,
+    QuotationLine,
+    Subscription,
+    SubscriptionItem,
+)
 
 __all__ = [
     "Base",
@@ -19,4 +27,10 @@ __all__ = [
     "Notification",
     "NotificationDelivery",
     "NotificationPreference",
+    "QuotationTemplate",
+    "QuotationTemplateLine",
+    "Quotation",
+    "QuotationLine",
+    "Subscription",
+    "SubscriptionItem",
 ]

@@ -1,8 +1,11 @@
 """add customer notifications and notification preferences
 
 Revision ID: 0002_notifications
-Revises: 0001_billing
+Revises: 0003_finance_intelligence
 Create Date: 2026-10-31
+
+NOTE: revision id is historical — chain sits after 0003_finance_intelligence
+to keep a single alembic head after merging into main.
 """
 
 from typing import Sequence, Union
@@ -12,7 +15,7 @@ from alembic import op
 
 
 revision: str = "0002_notifications"
-down_revision: Union[str, None] = "0001_billing"
+down_revision: Union[str, None] = "0003_finance_intelligence"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

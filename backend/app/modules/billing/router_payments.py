@@ -21,8 +21,8 @@ from .service_payments import PaymentService
 
 router = APIRouter(tags=["payments"])
 
-READ = Depends(require_roles("admin", "finance", "viewer"))
-WRITE = Depends(require_roles("admin", "finance"))
+READ = Depends(require_roles("admin", "staff"))
+WRITE = Depends(require_roles("admin", "staff"))
 
 _payments = PaymentService()
 

@@ -242,6 +242,9 @@ class BillingService:
 
             errors: list[dict] = []
             try:
+                run.closed = self.subscriptions.close_expired(
+                    run_session, run_for_date
+                )
                 due = self.subscriptions.get_due_subscriptions(
                     run_for_date, limit=limit, offset=offset
                 )

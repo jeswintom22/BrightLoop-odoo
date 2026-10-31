@@ -4,6 +4,7 @@ import datetime as dt
 import uuid
 from decimal import Decimal
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ...core.errors import AppError
@@ -27,10 +28,13 @@ class PaymentService:
         actor_id: uuid.UUID | None = None,
     ) -> tuple[Payment, bool]:
         """Returns (payment, created). A repeated idempotency_key returns the
-        existing payment with created=False — safe retries / double-submits."""
+        existing payment with created=False — safe retries / double-submits.
+        Reusing the same key with a different invoice or amount is a client
+        error (409), not a silent success."""
         if idempotency_key:
             existing = repo.get_payment_by_key(session, idempotency_key)
             if existing is not None:
+                self._assert_same_payload(existing, invoice_id, amount)
                 return existing, False
 
         invoice = repo.get_invoice_for_update(session, invoice_id)
@@ -64,14 +68,37 @@ class PaymentService:
             idempotency_key=idempotency_key,
             recorded_by=actor_id,
         )
-        session.add(payment)
+        try:
+            with session.begin_nested():
+                session.add(payment)
+                invoice.amount_paid = invoice.amount_paid + amount
+                if invoice.amount_paid >= invoice.total_amount:
+                    invoice.status = "paid"
+                session.flush()
+        except IntegrityError:
+            # Two concurrent requests raced on the same idempotency_key — the
+            # loser's savepoint rolls back (payment row, balance bump, and the
+            # burned counter value); return the winner's payment instead of a 500.
+            if idempotency_key:
+                existing = repo.get_payment_by_key(session, idempotency_key)
+                if existing is not None:
+                    self._assert_same_payload(existing, invoice_id, amount)
+                    return existing, False
+            raise
 
-        invoice.amount_paid = invoice.amount_paid + amount
-        if invoice.amount_paid >= invoice.total_amount:
-            invoice.status = "paid"
-
-        session.flush()
         return payment, True
+
+    @staticmethod
+    def _assert_same_payload(
+        payment: Payment, invoice_id: uuid.UUID, amount: Decimal
+    ) -> None:
+        if payment.invoice_id != invoice_id or payment.amount != amount:
+            raise AppError(
+                "IDEMPOTENCY_CONFLICT",
+                "idempotency_key was already used with a different invoice or amount",
+                409,
+                details={"payment_id": str(payment.id)},
+            )
 
     def void_payment(
         self,

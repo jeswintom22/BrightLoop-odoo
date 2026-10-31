@@ -159,8 +159,34 @@ def revenue_trend(
     invoiced = {p: amt for p, amt in session.execute(invoiced_q).all()}
     collected = {p: amt for p, amt in session.execute(collected_q).all()}
 
-    points: list[TrendPoint] = []
+    # Outstanding is a point-in-time running balance — seed it with everything
+    # invoiced/collected BEFORE the displayed range. Without this baseline a
+    # filtered view under-reports outstanding (or even goes negative when a
+    # payment inside the range settles an invoice issued before it).
     running = Decimal("0")
+    if date_from:
+        baseline_start = dt.datetime.combine(
+            date_from, dt.time.min, tzinfo=dt.timezone.utc
+        )
+        base_invoiced = session.scalar(
+            sa.select(
+                sa.func.coalesce(sa.func.sum(Invoice.total_amount), 0)
+            ).where(
+                Invoice.status.in_(["confirmed", "paid"]),
+                Invoice.issue_date < date_from,
+            )
+        ) or Decimal("0")
+        base_collected = session.scalar(
+            sa.select(
+                sa.func.coalesce(sa.func.sum(Payment.amount), 0)
+            ).where(
+                Payment.status == "posted",
+                Payment.paid_at < baseline_start,
+            )
+        ) or Decimal("0")
+        running = Decimal(str(base_invoiced)) - Decimal(str(base_collected))
+
+    points: list[TrendPoint] = []
     for period in sorted(set(invoiced) | set(collected)):
         inv = invoiced.get(period, Decimal("0")) or Decimal("0")
         col = collected.get(period, Decimal("0")) or Decimal("0")
