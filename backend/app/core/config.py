@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "BrightLoop Subscription Management API"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = (
-        "FastAPI backend for BrightLoop: catalog, subscriptions, billing and payments."
+        "FastAPI backend for BrightLoop: catalog, subscriptions, billing, payments, and product analytics."
     )
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
@@ -48,6 +48,11 @@ class Settings(BaseSettings):
 
     # Shared secret for POST /api/v1/internal/billing/run (GitHub Actions).
     INTERNAL_JOB_TOKEN: str = "dev-internal-token"
+
+    # OpenAI / AI Insights configuration
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     # Email (Resend). Empty key disables sending.
     RESEND_API_KEY: str = ""

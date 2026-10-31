@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { CreditCard, LayoutDashboard, Receipt, RefreshCw } from "lucide-react";
+import { BarChart3, CreditCard, LayoutDashboard, Receipt, RefreshCw } from "lucide-react";
 import {
   BrowserRouter,
   Link,
@@ -13,6 +13,7 @@ import DashboardPage from "./features/dashboard/DashboardPage";
 import InvoiceDetailPage from "./features/invoices/InvoiceDetailPage";
 import InvoicesPage from "./features/invoices/InvoicesPage";
 import PaymentsPage from "./features/payments/PaymentsPage";
+import ProductAnalyticsPage from "./features/analytics/ProductAnalyticsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -20,6 +21,7 @@ const queryClient = new QueryClient({
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/analytics", label: "Product Analytics", icon: BarChart3 },
   { to: "/invoices", label: "Invoices", icon: Receipt },
   { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/billing", label: "Billing runs", icon: RefreshCw },
@@ -32,7 +34,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-3">
           <Link to="/" className="text-lg font-bold tracking-tight">
             Brightloop
-            <span className="ml-2 font-normal text-slate-400">Billing</span>
+            <span className="ml-2 font-normal text-slate-400">Billing & Analytics</span>
           </Link>
           <nav className="flex gap-1">
             {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -66,6 +68,7 @@ export default function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/analytics" element={<ProductAnalyticsPage />} />
             <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/payments" element={<PaymentsPage />} />

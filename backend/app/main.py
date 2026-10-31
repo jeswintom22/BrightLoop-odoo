@@ -24,6 +24,7 @@ from .modules.billing import (
     router_invoices,
     router_payments,
 )
+from .modules.analytics import router as analytics_router
 
 logger = logging.getLogger("brightloop.main")
 settings = get_settings()
@@ -77,6 +78,9 @@ def create_app() -> FastAPI:
     app.include_router(router_billing.router, prefix="/api/v1")
     app.include_router(router_dashboard.router, prefix="/api/v1")
     app.include_router(router_internal.router, prefix="/api/v1")
+
+    # Product Performance Analytics, Discount Effectiveness & AI Insights
+    app.include_router(analytics_router, prefix=settings.API_V1_STR)
 
     app.add_api_route("/", root, methods=["GET"], tags=["Root"], summary="API Root & Overview")
 
