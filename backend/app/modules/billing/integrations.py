@@ -92,3 +92,9 @@ class SubscriptionProvider(Protocol):
         """Move next_billing_date past billed_period_end. MUST participate in the
         caller's transaction so invoice + date advancement commit atomically."""
         ...
+
+    def close_expired(self, session: Session, as_of: dt.date) -> int:
+        """Auto-close active subscriptions past expiry when the plan configures
+        auto_closure. Runs inside the caller's session before the due-scan so
+        manual and scheduled billing apply identical lifecycle rules."""
+        ...

@@ -39,7 +39,7 @@ class InvoiceLineOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    product_id: uuid.UUID | None
+    product_id: int | None
     subscription_line_id: uuid.UUID | None
     description: str
     position: int
@@ -152,6 +152,7 @@ class BillingRunOut(BaseModel):
     generated: int
     skipped: int
     failed: int
+    closed: int = 0
     errors: list | None
     started_at: dt.datetime
     finished_at: dt.datetime | None

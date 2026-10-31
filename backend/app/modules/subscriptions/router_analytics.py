@@ -1,19 +1,32 @@
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, Query, status
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from .models import (
-    Quotation,
-    QuotationLine,
-    Subscription,
-    SubscriptionLine,
-    LifecycleStatus,
-)
-from services.ai_copilot import generate_subscription_insights
+from ...core.config import get_settings
+from ...deps import get_db, require_roles
+from ..auth.models import Customer
+from .models import Quotation, Subscription
+from .services.ai_copilot import generate_subscription_insights
 
-router = APIRouter(prefix="/analytics", tags=["Subscription Intelligence & Analytics"])
+router = APIRouter(
+    prefix="/analytics",
+    tags=["Subscription Intelligence & Analytics"],
+    dependencies=[Depends(require_roles("admin", "staff"))],
+)
+
+
+def _subscription_total(sub: Subscription) -> float:
+    return sum(float(i.quantity) * float(i.unit_price) for i in sub.items)
+
+
+def _customer_map(db: Session) -> Dict[Any, Customer]:
+    return {c.id: c for c in db.query(Customer).all()}
+
+
+def _effective_end(sub: Subscription) -> Optional[date]:
+    return sub.expiry_date or sub.next_billing_date
 
 
 @router.get(
@@ -27,6 +40,9 @@ def get_churn_and_retention(
 ):
     """
     Computes cohort churn rate and customer retention rate over the specified date window.
+
+    Note: the schema has no closed_at timestamp, so a closed subscription's
+    updated_at is used as the approximation for when it closed.
     """
     today = date.today()
     period_end = end_date or today
@@ -40,7 +56,7 @@ def get_churn_and_retention(
         db.query(Subscription)
         .filter(
             Subscription.start_date <= period_start,
-            (Subscription.closed_at.is_(None)) | (Subscription.closed_at > period_start_dt),
+            (Subscription.status != "closed") | (Subscription.updated_at > period_start_dt),
         )
         .count()
     )
@@ -56,17 +72,20 @@ def get_churn_and_retention(
     )
 
     # 3. Churned / closed during period
-    churned_query = db.query(Subscription).filter(
-        Subscription.status == LifecycleStatus.CLOSED,
-        Subscription.closed_at >= period_start_dt,
-        Subscription.closed_at <= period_end_dt,
+    churned_subscriptions = (
+        db.query(Subscription)
+        .filter(
+            Subscription.status == "closed",
+            Subscription.updated_at >= period_start_dt,
+            Subscription.updated_at <= period_end_dt,
+        )
+        .all()
     )
-    churned_subscriptions = churned_query.all()
     churned_count = len(churned_subscriptions)
-    churned_revenue = sum(float(s.total_amount) for s in churned_subscriptions)
+    churned_revenue = sum(_subscription_total(s) for s in churned_subscriptions)
 
     # 4. Currently active ending count
-    ending_active = db.query(Subscription).filter(Subscription.status == LifecycleStatus.ACTIVE).count()
+    ending_active = db.query(Subscription).filter(Subscription.status == "active").count()
 
     cohort_base = starting_active + new_subscriptions
     if cohort_base > 0:
@@ -103,13 +122,16 @@ def get_churn_and_retention(
 def get_cancellation_reasons(db: Session = Depends(get_db)):
     """
     Returns breakdown and distribution of reasons for churned/closed subscriptions.
+
+    Note: the schema does not currently store a close reason on Subscription, so
+    every closure reports as unspecified until such a field is added.
     """
-    closed_subs = db.query(Subscription).filter(Subscription.status == LifecycleStatus.CLOSED).all()
+    closed_subs = db.query(Subscription).filter(Subscription.status == "closed").all()
     total_closed = len(closed_subs)
 
     reason_counts: Dict[str, int] = {}
     for sub in closed_subs:
-        raw_reason = (sub.close_reason or "").strip()
+        raw_reason = (getattr(sub, "close_reason", None) or "").strip()
         reason = raw_reason if raw_reason else "Unspecified / Voluntary Exit"
         reason_counts[reason] = reason_counts.get(reason, 0) + 1
 
@@ -145,28 +167,31 @@ def get_renewal_forecast(
     today = date.today()
     horizon = today + timedelta(days=days)
 
-    active_subs = db.query(Subscription).filter(Subscription.status == LifecycleStatus.ACTIVE).all()
+    active_subs = db.query(Subscription).filter(Subscription.status == "active").all()
+    customers = _customer_map(db)
+    currency = get_settings().DEFAULT_CURRENCY
 
     upcoming = []
     total_forecast_revenue = 0.0
 
     for sub in active_subs:
-        effective_date = sub.end_date or sub.next_billing_date
+        effective_date = _effective_end(sub)
         if effective_date and today <= effective_date <= horizon:
-            amt = float(sub.total_amount)
+            amt = _subscription_total(sub)
             total_forecast_revenue += amt
             days_left = (effective_date - today).days
+            customer = customers.get(sub.customer_id)
             upcoming.append(
                 {
-                    "subscription_id": sub.id,
+                    "subscription_id": str(sub.id),
                     "subscription_number": sub.subscription_number,
-                    "customer_id": sub.customer_id,
-                    "customer_name": sub.customer_name,
-                    "customer_email": sub.customer_email,
+                    "customer_id": str(sub.customer_id),
+                    "customer_name": customer.name if customer else None,
+                    "customer_email": customer.email if customer else None,
                     "renewal_date": effective_date.isoformat(),
                     "days_until_renewal": days_left,
                     "amount": amt,
-                    "currency": sub.currency,
+                    "currency": currency,
                     "billing_frequency": sub.billing_frequency,
                     "urgency": "Immediate (<=7d)" if days_left <= 7 else "Upcoming",
                 }
@@ -180,7 +205,7 @@ def get_renewal_forecast(
         "window_end": horizon.isoformat(),
         "upcoming_renewals_count": len(upcoming),
         "forecasted_renewal_revenue": round(total_forecast_revenue, 2),
-        "currency": "USD",
+        "currency": currency,
         "renewals": upcoming,
     }
 
@@ -193,9 +218,10 @@ def get_expansion_analytics(db: Session = Depends(get_db)):
     """
     Analyzes multi-order customers to quantify account expansion, upgrades, and contraction.
     """
-    all_subs = db.query(Subscription).order_by(Subscription.id.asc()).all()
+    all_subs = db.query(Subscription).order_by(Subscription.created_at.asc()).all()
+    customers = _customer_map(db)
 
-    customer_subs: Dict[str, List[Subscription]] = {}
+    customer_subs: Dict[Any, List[Subscription]] = {}
     for sub in all_subs:
         customer_subs.setdefault(sub.customer_id, []).append(sub)
 
@@ -208,26 +234,29 @@ def get_expansion_analytics(db: Session = Depends(get_db)):
         if len(subs) >= 2:
             prev = subs[-2]
             curr = subs[-1]
-            diff = float(curr.total_amount) - float(prev.total_amount)
+            prev_total = _subscription_total(prev)
+            curr_total = _subscription_total(curr)
+            diff = curr_total - prev_total
             expansion_amount += diff
+            customer = customers.get(curr.customer_id)
             if diff > 0:
                 upgrades += 1
                 movements.append({
-                    "customer_id": cust_id,
-                    "customer_name": curr.customer_name,
+                    "customer_id": str(cust_id),
+                    "customer_name": customer.name if customer else None,
                     "movement_type": "Upgrade",
-                    "previous_amount": float(prev.total_amount),
-                    "new_amount": float(curr.total_amount),
+                    "previous_amount": prev_total,
+                    "new_amount": curr_total,
                     "delta": round(diff, 2),
                 })
             elif diff < 0:
                 downgrades += 1
                 movements.append({
-                    "customer_id": cust_id,
-                    "customer_name": curr.customer_name,
+                    "customer_id": str(cust_id),
+                    "customer_name": customer.name if customer else None,
                     "movement_type": "Downgrade",
-                    "previous_amount": float(prev.total_amount),
-                    "new_amount": float(curr.total_amount),
+                    "previous_amount": prev_total,
+                    "new_amount": curr_total,
                     "delta": round(diff, 2),
                 })
 
@@ -246,11 +275,17 @@ def get_expansion_analytics(db: Session = Depends(get_db)):
 )
 def get_renewal_risks(db: Session = Depends(get_db)):
     """
-    Scores each active subscription for renewal/churn risk based on pause history,
+    Scores each active subscription for renewal/churn risk based on pause state,
     expiry proximity, and pricing anomalies.
     """
     today = date.today()
-    active_subs = db.query(Subscription).filter(Subscription.status == LifecycleStatus.ACTIVE).all()
+    active_subs = (
+        db.query(Subscription)
+        .filter(Subscription.status.in_(["active", "paused"]))
+        .all()
+    )
+    customers = _customer_map(db)
+    quotations = {q.id: q for q in db.query(Quotation).all()}
 
     risk_list = []
     high_count = 0
@@ -261,11 +296,11 @@ def get_renewal_risks(db: Session = Depends(get_db)):
         score = 0
         factors = []
 
-        if sub.pause_reason:
+        if sub.status == "paused":
             score += 40
-            factors.append(f"Account has pause history ('{sub.pause_reason}')")
+            factors.append("Account is currently paused")
 
-        effective_date = sub.end_date or sub.next_billing_date
+        effective_date = _effective_end(sub)
         if effective_date:
             days_left = (effective_date - today).days
             if days_left <= 7:
@@ -275,7 +310,12 @@ def get_renewal_risks(db: Session = Depends(get_db)):
                 score += 20
                 factors.append(f"Renewal upcoming in {days_left} days")
 
-        heavy_discount = any(float(line.discount_percent) >= 25.0 for line in sub.lines)
+        quotation = quotations.get(sub.quotation_id)
+        heavy_discount = (
+            quotation is not None
+            and float(quotation.subtotal or 0) > 0
+            and float(quotation.discount_total or 0) / float(quotation.subtotal) >= 0.25
+        )
         if heavy_discount:
             score += 15
             factors.append("Subscribed under heavy promotional discount (>=25%)")
@@ -297,12 +337,13 @@ def get_renewal_risks(db: Session = Depends(get_db)):
             low_count += 1
             action = "Healthy: Standard recurring billing cycle."
 
+        customer = customers.get(sub.customer_id)
         risk_list.append(
             {
-                "subscription_id": sub.id,
+                "subscription_id": str(sub.id),
                 "subscription_number": sub.subscription_number,
-                "customer_name": sub.customer_name,
-                "customer_email": sub.customer_email,
+                "customer_name": customer.name if customer else None,
+                "customer_email": customer.email if customer else None,
                 "risk_level": level,
                 "risk_score": min(score, 100),
                 "risk_factors": factors if factors else ["Healthy usage and billing schedule"],

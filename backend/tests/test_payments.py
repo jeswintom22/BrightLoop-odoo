@@ -143,3 +143,74 @@ def test_cancel_invoice_with_payments_rejected(
     with pytest.raises(AppError) as exc:
         billing.cancel_invoice(session, confirmed_invoice)
     assert exc.value.code == "INVALID_STATE"
+
+
+def test_idempotent_retry_same_payload(payment_service, session, confirmed_invoice):
+    p1, created1 = payment_service.record_payment(
+        session,
+        invoice_id=confirmed_invoice.id,
+        amount=Decimal("50"),
+        method="upi",
+        idempotency_key="pay-abc-1",
+    )
+    session.commit()
+    p2, created2 = payment_service.record_payment(
+        session,
+        invoice_id=confirmed_invoice.id,
+        amount=Decimal("50"),
+        method="upi",
+        idempotency_key="pay-abc-1",
+    )
+    assert created1 is True
+    assert created2 is False
+    assert p2.id == p1.id
+
+
+def test_idempotency_key_reused_different_amount_conflicts(
+    payment_service, session, confirmed_invoice
+):
+    payment_service.record_payment(
+        session,
+        invoice_id=confirmed_invoice.id,
+        amount=Decimal("50"),
+        method="upi",
+        idempotency_key="pay-abc-2",
+    )
+    session.commit()
+    with pytest.raises(AppError) as exc:
+        payment_service.record_payment(
+            session,
+            invoice_id=confirmed_invoice.id,
+            amount=Decimal("75"),
+            method="upi",
+            idempotency_key="pay-abc-2",
+        )
+    assert exc.value.code == "IDEMPOTENCY_CONFLICT"
+
+
+def test_idempotency_key_reused_different_invoice_conflicts(
+    payment_service, session, billing, providers, confirmed_invoice
+):
+    from app.core.time import business_date
+
+    payment_service.record_payment(
+        session,
+        invoice_id=confirmed_invoice.id,
+        amount=Decimal("50"),
+        method="upi",
+        idempotency_key="pay-abc-3",
+    )
+    # second confirmed invoice for a different subscription
+    sub2 = providers["subs"].get_due_subscriptions(business_date(), limit=10)[1]
+    inv2, _ = billing.generate_invoice(session, subscription_id=sub2.id)
+    billing.confirm_invoice(session, inv2)
+    session.commit()
+    with pytest.raises(AppError) as exc:
+        payment_service.record_payment(
+            session,
+            invoice_id=inv2.id,
+            amount=Decimal("50"),
+            method="upi",
+            idempotency_key="pay-abc-3",
+        )
+    assert exc.value.code == "IDEMPOTENCY_CONFLICT"

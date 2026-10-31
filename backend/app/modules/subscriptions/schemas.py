@@ -1,181 +1,112 @@
-from datetime import date, datetime
-from enum import Enum
-from typing import List, Optional
-from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
-from .models import LifecycleStatus, BillingFrequency
+"""P3 request/response schemas."""
+
+import datetime as dt
+import uuid
+from decimal import Decimal
+
+from pydantic import BaseModel, Field
 
 
-class LifecycleAction(str, Enum):
-    PAUSE = "pause"
-    RESUME = "resume"
-    CLOSE = "close"
+class TemplateLineIn(BaseModel):
+    product_id: int | None = None
+    plan_id: uuid.UUID | None = None
+    description: str = ""
+    quantity: Decimal = Field(gt=0, default=Decimal("1"))
 
 
-# ==========================================
-# Quotation Line Schemas
-# ==========================================
-
-class QuotationLineBase(BaseModel):
-    product_id: Optional[str] = Field(None, description="Product identifier or SKU")
-    product_name: str = Field(..., min_length=1, description="Product name")
-    description: Optional[str] = Field(None, description="Line item description")
-    quantity: float = Field(default=1.0, gt=0, description="Quantity ordered")
-    unit_price: float = Field(..., ge=0, description="Unit price before discounts and taxes")
-    discount_percent: float = Field(default=0.0, ge=0, le=100, description="Discount percentage (0-100)")
-    tax_percent: float = Field(default=0.0, ge=0, description="Tax percentage")
-    billing_frequency: str = Field(
-        default="monthly",
-        description="Billing frequency (daily, weekly, monthly, yearly)"
-    )
-
-    @field_validator("billing_frequency")
-    @classmethod
-    def validate_frequency(cls, v: str) -> str:
-        cleaned = v.strip().lower()
-        valid = {"daily", "weekly", "monthly", "yearly"}
-        if cleaned not in valid:
-            raise ValueError(f"billing_frequency must be one of {valid}")
-        return cleaned
+class TemplateCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    validity_days: int = Field(default=15, ge=1, le=365)
+    lines: list[TemplateLineIn] = Field(min_length=1)
 
 
-class QuotationLineCreate(QuotationLineBase):
-    pass
+class TemplateLineOut(TemplateLineIn):
+    id: uuid.UUID
+    model_config = {"from_attributes": True}
 
 
-class QuotationLineRead(QuotationLineBase):
-    id: int
-    quotation_id: int
-    subtotal: float
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ==========================================
-# Quotation Schemas
-# ==========================================
-
-class QuotationCreate(BaseModel):
-    quotation_number: Optional[str] = Field(
-        None,
-        description="Optional explicit quotation number; auto-generated (e.g., QUO-2026-0001) if omitted"
-    )
-    customer_id: str = Field(..., min_length=1, description="Customer or User ID")
-    customer_name: str = Field(..., min_length=1, description="Customer full name")
-    customer_email: EmailStr = Field(..., description="Customer email address")
-    valid_until: date = Field(..., description="Quotation validity expiration date")
-    template_name: Optional[str] = Field(None, description="Quotation template or offer name")
-    notes: Optional[str] = Field(None, description="Terms or special notes")
-    currency: str = Field(default="USD", max_length=10, description="ISO currency code")
-    status: Optional[LifecycleStatus] = Field(
-        default=LifecycleStatus.DRAFT,
-        description="Initial status (Draft or Quotation)"
-    )
-    lines: List[QuotationLineCreate] = Field(
-        ...,
-        min_length=1,
-        description="List of product lines included in quotation"
-    )
+class TemplateOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    description: str | None
+    validity_days: int
+    is_active: bool
+    lines: list[TemplateLineOut] = []
+    model_config = {"from_attributes": True}
 
 
-class QuotationStatusUpdate(BaseModel):
-    status: LifecycleStatus = Field(..., description="New lifecycle status for quotation")
+class QuotationLineIn(BaseModel):
+    product_id: int | None = None
+    product_variant_id: int | None = None
+    plan_id: uuid.UUID | None = None
+    description: str = ""
+    quantity: Decimal = Field(gt=0, default=Decimal("1"))
 
 
-class QuotationRead(BaseModel):
-    id: int
+class QuotationCreateRequest(BaseModel):
+    customer_id: uuid.UUID
+    template_id: uuid.UUID | None = None
+    lines: list[QuotationLineIn] | None = None
+    notes: str | None = None
+
+
+class QuotationLineOut(BaseModel):
+    id: uuid.UUID
+    product_id: int | None
+    product_variant_id: int | None
+    plan_id: uuid.UUID | None
+    description: str
+    quantity: Decimal
+    unit_price: Decimal
+    tax_rate: Decimal
+    line_total: Decimal
+    model_config = {"from_attributes": True}
+
+
+class QuotationOut(BaseModel):
+    id: uuid.UUID
     quotation_number: str
-    customer_id: str
-    customer_name: str
-    customer_email: str
-    valid_until: date
-    status: LifecycleStatus
-    total_amount: float
-    currency: str
-    template_name: Optional[str] = None
-    notes: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-    lines: List[QuotationLineRead] = []
-
-    model_config = ConfigDict(from_attributes=True)
+    customer_id: uuid.UUID
+    status: str
+    issue_date: dt.date
+    valid_until: dt.date
+    subtotal: Decimal
+    tax_total: Decimal
+    discount_total: Decimal
+    total_amount: Decimal
+    notes: str | None
+    lines: list[QuotationLineOut] = []
+    model_config = {"from_attributes": True}
 
 
-# ==========================================
-# Subscription Schemas
-# ==========================================
-
-class SubscriptionConvertRequest(BaseModel):
-    start_date: Optional[date] = Field(
-        None,
-        description="Subscription activation date. Defaults to today."
-    )
-    billing_frequency: Optional[str] = Field(
-        None,
-        description="Optional billing frequency override (daily, weekly, monthly, yearly)"
-    )
-    notes: Optional[str] = Field(
-        None,
-        description="Additional subscription notes"
-    )
-    auto_confirm: Optional[bool] = Field(
-        False,
-        description="Automatically promote quotation to Confirmed if still in Draft/Quotation"
-    )
-
-    @field_validator("billing_frequency")
-    @classmethod
-    def validate_frequency(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return None
-        cleaned = v.strip().lower()
-        valid = {"daily", "weekly", "monthly", "yearly"}
-        if cleaned not in valid:
-            raise ValueError(f"billing_frequency must be one of {valid}")
-        return cleaned
+class ConvertRequest(BaseModel):
+    start_date: dt.date | None = None
+    payment_terms: str | None = None
 
 
-class SubscriptionLifecycleUpdate(BaseModel):
-    action: LifecycleAction = Field(..., description="Action to perform: 'pause', 'resume', or 'close'")
-    reason: Optional[str] = Field(None, description="Optional explanation or reason for the state change")
+class SubscriptionItemOut(BaseModel):
+    id: uuid.UUID
+    product_id: int | None
+    product_variant_id: int | None
+    description: str
+    quantity: Decimal
+    unit_price: Decimal
+    tax_rate: Decimal
+    model_config = {"from_attributes": True}
 
 
-class SubscriptionLineRead(BaseModel):
-    id: int
-    subscription_id: int
-    product_id: Optional[str] = None
-    product_name: str
-    description: Optional[str] = None
-    quantity: float
-    unit_price: float
-    discount_percent: float
-    tax_percent: float
-    subtotal: float
-    billing_frequency: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class SubscriptionRead(BaseModel):
-    id: int
+class SubscriptionOut(BaseModel):
+    id: uuid.UUID
     subscription_number: str
-    quotation_id: Optional[int] = None
-    customer_id: str
-    customer_name: str
-    customer_email: str
-    status: LifecycleStatus
-    start_date: date
-    end_date: Optional[date] = None
-    next_billing_date: Optional[date] = None
+    customer_id: uuid.UUID
+    plan_id: uuid.UUID | None
+    quotation_id: uuid.UUID | None
+    status: str
     billing_frequency: str
-    total_amount: float
-    currency: str
-    pause_reason: Optional[str] = None
-    close_reason: Optional[str] = None
-    paused_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
-    notes: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-    lines: List[SubscriptionLineRead] = []
-
-    model_config = ConfigDict(from_attributes=True)
+    start_date: dt.date | None
+    expiry_date: dt.date | None
+    next_billing_date: dt.date | None
+    payment_terms: str | None
+    items: list[SubscriptionItemOut] = []
+    model_config = {"from_attributes": True}

@@ -1,158 +1,177 @@
-import enum
-from datetime import datetime, date, timezone
-from typing import Optional, List
-from sqlalchemy import (
-    String,
-    Integer,
-    Numeric,
-    DateTime,
-    Date,
-    ForeignKey,
-    Enum as SQLEnum,
-    Text,
-)
+"""P3 — quotations & subscription lifecycle.
+
+Table/column names for `subscriptions`/`subscription_items` intentionally
+match the billing contract consumed by
+modules/billing/integrations_db.py::DbSubscriptionProvider — when these
+tables exist, USE_STUB_PROVIDERS=false switches billing onto real data
+with zero code changes there.
+
+UUID PKs align with billing's FK columns (invoices.subscription_id,
+invoice_lines.subscription_line_id are uuid-typed).
+"""
+
+import datetime as dt
+import uuid
+
+import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.core.database import Base
+
+from ...core.database import Base
+from ...core.time import utc_now
+
+SUBSCRIPTION_STATUSES = ("draft", "confirmed", "active", "paused", "closed")
+QUOTATION_STATUSES = ("draft", "sent", "confirmed", "expired", "cancelled", "converted")
 
 
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+def _uuid_pk() -> Mapped[uuid.UUID]:
+    return mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
 
 
-class LifecycleStatus(str, enum.Enum):
-    DRAFT = "Draft"
-    QUOTATION = "Quotation"
-    CONFIRMED = "Confirmed"
-    ACTIVE = "Active"
-    PAUSED = "Paused"
-    CLOSED = "Closed"
+class QuotationTemplate(Base):
+    __tablename__ = "quotation_templates"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    name: Mapped[str] = mapped_column(sa.String(255))
+    description: Mapped[str | None] = mapped_column(sa.Text)
+    validity_days: Mapped[int] = mapped_column(sa.Integer, default=15)
+    is_active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        sa.DateTime(timezone=True), default=utc_now
+    )
+
+    lines: Mapped[list["QuotationTemplateLine"]] = relationship(
+        "QuotationTemplateLine", back_populates="template",
+        cascade="all, delete-orphan", order_by="QuotationTemplateLine.position",
+    )
 
 
-# Status aliases for domain-specific convenience
-QuotationStatus = LifecycleStatus
-SubscriptionStatus = LifecycleStatus
+class QuotationTemplateLine(Base):
+    __tablename__ = "quotation_template_lines"
 
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    template_id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, sa.ForeignKey("quotation_templates.id", ondelete="CASCADE"),
+        index=True,
+    )
+    product_id: Mapped[int | None] = mapped_column(
+        sa.Integer, sa.ForeignKey("products.id", ondelete="SET NULL")
+    )
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
+    )
+    description: Mapped[str] = mapped_column(sa.String(255), default="")
+    quantity: Mapped[float] = mapped_column(sa.Numeric(12, 2), default=1)
+    position: Mapped[int] = mapped_column(sa.Integer, default=0)
 
-class BillingFrequency(str, enum.Enum):
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
-    YEARLY = "yearly"
+    template: Mapped[QuotationTemplate] = relationship(back_populates="lines")
 
 
 class Quotation(Base):
     __tablename__ = "quotations"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    quotation_number: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
-    customer_id: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
-    customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    customer_email: Mapped[str] = mapped_column(String(255), nullable=False)
-    valid_until: Mapped[date] = mapped_column(Date, nullable=False)
-    status: Mapped[LifecycleStatus] = mapped_column(
-        SQLEnum(LifecycleStatus, native_enum=False, values_callable=lambda obj: [e.value for e in obj]),
-        default=LifecycleStatus.DRAFT,
-        nullable=False,
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    quotation_number: Mapped[str] = mapped_column(sa.String(20), unique=True)
+    customer_id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, sa.ForeignKey("customers.id"), index=True
     )
-    total_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0, nullable=False)
-    currency: Mapped[str] = mapped_column(String(10), default="USD", nullable=False)
-    template_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+    template_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("quotation_templates.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(sa.String(20), default="draft", index=True)
+    issue_date: Mapped[dt.date] = mapped_column(sa.Date)
+    valid_until: Mapped[dt.date] = mapped_column(sa.Date)
+    notes: Mapped[str | None] = mapped_column(sa.Text)
+    subtotal: Mapped[float] = mapped_column(sa.Numeric(14, 2), default=0)
+    tax_total: Mapped[float] = mapped_column(sa.Numeric(14, 2), default=0)
+    discount_total: Mapped[float] = mapped_column(sa.Numeric(14, 2), default=0)
+    total_amount: Mapped[float] = mapped_column(sa.Numeric(14, 2), default=0)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        sa.DateTime(timezone=True), default=utc_now
+    )
 
-    # Relationships
-    lines: Mapped[List["QuotationLine"]] = relationship(
-        "QuotationLine",
-        back_populates="quotation",
-        cascade="all, delete-orphan",
-        lazy="selectin",
-    )
-    subscription: Mapped[Optional["Subscription"]] = relationship(
-        "Subscription",
-        back_populates="quotation",
-        uselist=False,
-        lazy="selectin",
+    lines: Mapped[list["QuotationLine"]] = relationship(
+        "QuotationLine", back_populates="quotation",
+        cascade="all, delete-orphan", order_by="QuotationLine.position",
     )
 
 
 class QuotationLine(Base):
     __tablename__ = "quotation_lines"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    quotation_id: Mapped[int] = mapped_column(Integer, ForeignKey("quotations.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
-    product_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    quantity: Mapped[float] = mapped_column(Numeric(10, 2), default=1.0, nullable=False)
-    unit_price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    discount_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0.0, nullable=False)
-    tax_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0.0, nullable=False)
-    subtotal: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0, nullable=False)
-    billing_frequency: Mapped[str] = mapped_column(String(50), default="monthly", nullable=False)
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    quotation_id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, sa.ForeignKey("quotations.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[int | None] = mapped_column(
+        sa.Integer, sa.ForeignKey("products.id", ondelete="SET NULL")
+    )
+    product_variant_id: Mapped[int | None] = mapped_column(
+        sa.Integer, sa.ForeignKey("product_variants.id", ondelete="SET NULL")
+    )
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
+    )
+    description: Mapped[str] = mapped_column(sa.String(255), default="")
+    quantity: Mapped[float] = mapped_column(sa.Numeric(12, 2), default=1)
+    unit_price: Mapped[float] = mapped_column(sa.Numeric(12, 2), default=0)
+    tax_rate: Mapped[float] = mapped_column(sa.Numeric(5, 2), default=0)
+    line_total: Mapped[float] = mapped_column(sa.Numeric(14, 2), default=0)
+    position: Mapped[int] = mapped_column(sa.Integer, default=0)
 
-    # Relationship
-    quotation: Mapped["Quotation"] = relationship("Quotation", back_populates="lines")
+    quotation: Mapped[Quotation] = relationship(back_populates="lines")
 
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    subscription_number: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
-    quotation_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
-        ForeignKey("quotations.id", ondelete="SET NULL"),
-        nullable=True,
-        unique=True,
-        index=True,
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    subscription_number: Mapped[str] = mapped_column(sa.String(20), unique=True)
+    customer_id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, sa.ForeignKey("customers.id"), index=True
     )
-    customer_id: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
-    customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    customer_email: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[LifecycleStatus] = mapped_column(
-        SQLEnum(LifecycleStatus, native_enum=False, values_callable=lambda obj: [e.value for e in obj]),
-        default=LifecycleStatus.ACTIVE,
-        nullable=False,
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("subscription_plans.id", ondelete="SET NULL")
     )
-    start_date: Mapped[date] = mapped_column(Date, nullable=False)
-    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    next_billing_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    billing_frequency: Mapped[str] = mapped_column(String(50), default="monthly", nullable=False)
-    total_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0, nullable=False)
-    currency: Mapped[str] = mapped_column(String(10), default="USD", nullable=False)
-    pause_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    close_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    paused_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+    quotation_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.Uuid, sa.ForeignKey("quotations.id", ondelete="SET NULL")
+    )
+    # draft -> confirmed -> active <-> paused -> closed
+    status: Mapped[str] = mapped_column(sa.String(20), default="draft", index=True)
+    billing_frequency: Mapped[str] = mapped_column(sa.String(20), default="monthly")
+    start_date: Mapped[dt.date | None] = mapped_column(sa.Date)
+    expiry_date: Mapped[dt.date | None] = mapped_column(sa.Date)
+    next_billing_date: Mapped[dt.date | None] = mapped_column(sa.Date, index=True)
+    payment_terms: Mapped[str | None] = mapped_column(sa.String(100))
+    created_at: Mapped[dt.datetime] = mapped_column(
+        sa.DateTime(timezone=True), default=utc_now
+    )
+    updated_at: Mapped[dt.datetime] = mapped_column(
+        sa.DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
 
-    # Relationships
-    quotation: Mapped[Optional["Quotation"]] = relationship("Quotation", back_populates="subscription")
-    lines: Mapped[List["SubscriptionLine"]] = relationship(
-        "SubscriptionLine",
-        back_populates="subscription",
-        cascade="all, delete-orphan",
-        lazy="selectin",
+    items: Mapped[list["SubscriptionItem"]] = relationship(
+        "SubscriptionItem", back_populates="subscription",
+        cascade="all, delete-orphan", order_by="SubscriptionItem.position",
     )
 
 
-class SubscriptionLine(Base):
-    __tablename__ = "subscription_lines"
+class SubscriptionItem(Base):
+    __tablename__ = "subscription_items"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
-    subscription_id: Mapped[int] = mapped_column(Integer, ForeignKey("subscriptions.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
-    product_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    quantity: Mapped[float] = mapped_column(Numeric(10, 2), default=1.0, nullable=False)
-    unit_price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    discount_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0.0, nullable=False)
-    tax_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0.0, nullable=False)
-    subtotal: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0, nullable=False)
-    billing_frequency: Mapped[str] = mapped_column(String(50), default="monthly", nullable=False)
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    subscription_id: Mapped[uuid.UUID] = mapped_column(
+        sa.Uuid, sa.ForeignKey("subscriptions.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[int | None] = mapped_column(
+        sa.Integer, sa.ForeignKey("products.id", ondelete="SET NULL")
+    )
+    product_variant_id: Mapped[int | None] = mapped_column(
+        sa.Integer, sa.ForeignKey("product_variants.id", ondelete="SET NULL")
+    )
+    description: Mapped[str] = mapped_column(sa.String(255), default="")
+    quantity: Mapped[float] = mapped_column(sa.Numeric(12, 2), default=1)
+    unit_price: Mapped[float] = mapped_column(sa.Numeric(12, 2), default=0)
+    tax_rate: Mapped[float] = mapped_column(sa.Numeric(5, 2), default=0)
+    position: Mapped[int] = mapped_column(sa.Integer, default=0)
 
-    # Relationship
-    subscription: Mapped["Subscription"] = relationship("Subscription", back_populates="lines")
+    subscription: Mapped[Subscription] = relationship(back_populates="items")
