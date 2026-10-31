@@ -31,3 +31,4 @@ A unified software platform that runs the full life of a subscription businessâ€
 - **Email**: Resend (for notifications and password resets)
 - **Deployment**: Vercel (Frontend) & Render (Backend)
 - **CI/CD**: GitHub Actions
+
