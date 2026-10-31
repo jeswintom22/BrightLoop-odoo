@@ -1,0 +1,50 @@
+# Scheduled recurring billing — see docs/architecture.md §6.B/§9.
+# Calls the secured internal endpoint on the deployed API. The endpoint is
+# idempotent (unique subscription+period constraint), so retries/double
+# triggers are safe. Loops while `remaining > 0` for large due-sets.
+
+name: billing-cron
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # daily 01:00 UTC
+  workflow_dispatch: # manual trigger from the Actions tab
+
+env:
+  API_BASE_URL: ${{ secrets.API_BASE_URL }}
+  INTERNAL_JOB_TOKEN: ${{ secrets.INTERNAL_JOB_TOKEN }}
+
+jobs:
+  run-billing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger recurring billing run
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 20); do
+            echo "=== billing run batch $i ==="
+            response=$(curl -sS -w '\n%{http_code}' -X POST \
+              "$API_BASE_URL/api/v1/internal/billing/run" \
+              -H "X-Internal-Token: $INTERNAL_JOB_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{}')
+            http_code=$(tail -n1 <<< "$response")
+            body=$(head -n -1 <<< "$response")
+            echo "$body"
+            if [ "$http_code" -ne 200 ]; then
+              echo "::error::billing run failed with HTTP $http_code"
+              exit 1
+            fi
+            remaining=$(jq -r '.remaining // 0' <<< "$body")
+            failed=$(jq -r '.failed // 0' <<< "$body")
+            if [ "$failed" -gt 0 ]; then
+              echo "::warning::$failed subscription(s) failed to bill — check billing_runs.errors"
+            fi
+            if [ "$remaining" -le 0 ]; then
+              echo "All due subscriptions billed."
+              exit 0
+            fi
+          done
+          echo "::error::billing did not finish after 20 batches"
+          exit 1

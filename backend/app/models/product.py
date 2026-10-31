@@ -1,7 +1,8 @@
+import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional, TYPE_CHECKING
-from sqlalchemy import Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey, func
+from sqlalchemy import Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
@@ -21,7 +22,7 @@ class Product(Base):
     sales_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
     cost_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    tax_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tax_configurations.id"), nullable=True)
+    tax_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("tax_configurations.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

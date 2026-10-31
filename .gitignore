@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyd
 
 # C extensions
 *.so
@@ -39,14 +40,20 @@ venv.bak/
 .env.local
 .env.*.local
 *.env
+!.env.example
 
 # SQLite & local databases
 *.sqlite
 *.sqlite3
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 
-# Next.js / Node.js
+# Node.js / Frontend
 node_modules/
 .next/
 out/
@@ -64,15 +71,34 @@ lerna-debug.log*
 *.sublime-workspace
 .DS_Store
 Thumbs.db
+desktop.ini
+*.swp
+*.swo
 
-# Testing & Coverage
+# Testing, Linting & Coverage
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+coverage/
 coverage.xml
 *.cover
 *.pyo
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+.nox/
+.pytype/
+.pyre/
+.dmypy.json
+.cache/
+
+# Temporary & backup files
+*.bak
+*.tmp
 
 # Logs
 logs/
 *.log
+frontend/.vite/
