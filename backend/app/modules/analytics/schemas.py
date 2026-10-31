@@ -3,6 +3,7 @@
 import datetime as dt
 from decimal import Decimal
 from typing import Annotated, Any, Dict, List, Literal, Optional
+from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
 
 # Serialize Decimals as JSON numbers (or floats) for standard API / UI handling
@@ -75,7 +76,7 @@ class TopSubscribedProductItem(BaseModel):
 class TopSubscribedPlanItem(BaseModel):
     """Subscription plan ranked by subscriber count and recurring revenue."""
     rank: int
-    plan_id: int
+    plan_id: UUID
     plan_name: str
     product_id: int
     product_name: str
@@ -131,7 +132,7 @@ class ProductRevenueComparisonItem(BaseModel):
 
 class PlanRevenueComparisonItem(BaseModel):
     """Comparison item across subscription plans."""
-    plan_id: int
+    plan_id: UUID
     plan_name: str
     product_name: str
     billing_frequency: str
@@ -150,10 +151,10 @@ class RevenueComparisonOut(BaseModel):
 
 class DiscountUsageItem(BaseModel):
     """Detailed discount tracking & effectiveness metrics."""
-    discount_id: int
+    discount_id: UUID
     name: str
     code: str
-    discount_type: str  # percentage | fixed_amount
+    discount_type: str  # percentage | fixed
     discount_value: JSONDecimal
     usage_count: int
     usage_limit: Optional[int]

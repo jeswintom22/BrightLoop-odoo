@@ -638,7 +638,7 @@ class ProductAnalyticsService:
                     remaining_uses=rem,
                     usage_pct=u_pct,
                     is_exhausted=is_exhausted,
-                    min_purchase_amount=_to_decimal(d.min_purchase_amount),
+                    min_purchase_amount=_to_decimal(d.minimum_purchase_amount),
                     is_active=d.is_active,
                     start_date=d.start_date,
                     expiry_date=d.expiry_date,

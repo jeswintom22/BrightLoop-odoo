@@ -200,7 +200,7 @@ def run_seed(db: Session) -> dict:
                 price=pl_info["price"],
                 billing_frequency=pl_info["billing_frequency"],
                 minimum_quantity=pl_info["minimum_quantity"],
-                start_date=pl_info["start_date"],
+                available_from=pl_info["start_date"],
                 status=pl_info["status"],
             )
             db.add(pl)
@@ -215,7 +215,7 @@ def run_seed(db: Session) -> dict:
             "discount_value": Decimal("50.00"),
             "start_date": now - dt.timedelta(days=90),
             "expiry_date": now + dt.timedelta(days=60),
-            "min_purchase_amount": Decimal("1000.00"),
+            "minimum_purchase_amount": Decimal("1000.00"),
             "usage_limit": 100,
             "usage_count": 82,
             "is_active": True,
@@ -223,11 +223,11 @@ def run_seed(db: Session) -> dict:
         {
             "name": "Flat ₹500 Off Enterprise",
             "code": "FLAT500",
-            "discount_type": "fixed_amount",
+            "discount_type": "fixed",
             "discount_value": Decimal("500.00"),
             "start_date": now - dt.timedelta(days=60),
             "expiry_date": now + dt.timedelta(days=30),
-            "min_purchase_amount": Decimal("2500.00"),
+            "minimum_purchase_amount": Decimal("2500.00"),
             "usage_limit": 50,
             "usage_count": 48,  # Near capacity: 96%
             "is_active": True,
@@ -239,7 +239,7 @@ def run_seed(db: Session) -> dict:
             "discount_value": Decimal("20.00"),
             "start_date": now - dt.timedelta(days=120),
             "expiry_date": now + dt.timedelta(days=15),
-            "min_purchase_amount": Decimal("500.00"),
+            "minimum_purchase_amount": Decimal("500.00"),
             "usage_limit": 30,
             "usage_count": 30,  # Exhausted: 100%
             "is_active": True,
@@ -251,7 +251,7 @@ def run_seed(db: Session) -> dict:
             "discount_value": Decimal("10.00"),
             "start_date": now - dt.timedelta(days=20),
             "expiry_date": now + dt.timedelta(days=70),
-            "min_purchase_amount": Decimal("0.00"),
+            "minimum_purchase_amount": Decimal("0.00"),
             "usage_limit": 200,
             "usage_count": 14,  # Available
             "is_active": True,
@@ -310,7 +310,7 @@ def run_seed(db: Session) -> dict:
             # Line
             line = InvoiceLine(
                 invoice_id=inv.id,
-                product_id=uuid.UUID(f"00000000-0000-4000-8000-{prod.id:012d}"),
+                product_id=prod.id,
                 description=f"{prod.name} (Monthly)",
                 position=0,
                 quantity=Decimal(str(qty)),

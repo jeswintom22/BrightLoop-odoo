@@ -214,7 +214,7 @@ export interface TopSubscribedProduct {
 
 export interface TopSubscribedPlan {
   rank: number;
-  plan_id: number;
+  plan_id: string;
   plan_name: string;
   product_id: number;
   product_name: string;
@@ -267,7 +267,7 @@ export interface ProductRevenueComparisonItem {
 }
 
 export interface PlanRevenueComparisonItem {
-  plan_id: number;
+  plan_id: string;
   plan_name: string;
   product_name: string;
   billing_frequency: string;
@@ -285,7 +285,7 @@ export interface RevenueComparisonResponse {
 }
 
 export interface DiscountUsageItem {
-  discount_id: number;
+  discount_id: string;
   name: string;
   code: string;
   discount_type: "percentage" | "fixed_amount" | string;
