@@ -5,7 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatMoney(amount: string | number | null | undefined, currency: string = "INR"): string {
+export function formatMoney(
+  amount: string | number | null | undefined,
+  currency: string = "INR",
+): string {
   if (amount === null || amount === undefined || amount === "") {
     return "₹0.00";
   }
@@ -25,9 +28,22 @@ export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return "-";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return String(date);
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
     month: "short",
-    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function formatDateTime(iso: string | Date | null | undefined): string {
+  if (!iso) return "-";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (isNaN(d.getTime())) return String(iso);
+  return d.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }

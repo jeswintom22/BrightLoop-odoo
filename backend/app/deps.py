@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 
 import jwt
+import sqlalchemy as sa
 from fastapi import Depends, Header, Request
 from sqlalchemy.orm import Session
 
@@ -37,8 +38,8 @@ class CurrentUser:
 
 DEV_USER = CurrentUser(
     id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
-    email="finance@brightloop.dev",
-    roles=["admin", "finance"],
+    email="admin@brightloop.dev",
+    roles=["admin", "staff"],
 )
 
 
@@ -47,10 +48,10 @@ def get_current_user(
 ) -> CurrentUser:
     """Resolve the caller from a Bearer JWT issued by P1's auth module.
     [PROPOSED] claims shape: {sub: user_id, email, roles: [...]}."""
-    if settings.AUTH_DEV_BYPASS:
-        return DEV_USER
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
+        if settings.AUTH_DEV_BYPASS:
+            return DEV_USER
         raise AppError("UNAUTHENTICATED", "Missing bearer token", 401)
     try:
         claims = jwt.decode(
@@ -65,8 +66,26 @@ def get_current_user(
     )
 
 
+def get_notification_customer_id(db: Session, user: CurrentUser) -> uuid.UUID:
+    if "customer" not in user.roles:
+        return user.id
+
+    from .modules.auth.models import Customer
+
+    customer_id = db.scalar(
+        sa.select(Customer.id).where(Customer.user_id == user.id)
+    )
+    if customer_id is None:
+        raise AppError(
+            "CUSTOMER_NOT_FOUND",
+            "Customer account is not linked to a billing customer",
+            404,
+        )
+    return customer_id
+
+
 def require_roles(*roles: str):
-    """[PROPOSED] role names: admin / finance (write), viewer (read-only)."""
+    """Role names (P1): admin / staff / customer."""
 
     def dep(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
         if roles and not set(roles) & set(user.roles):
@@ -125,6 +144,42 @@ def get_billing_service(
 
 def get_session_factory():
     return SessionLocal
+
+
+# --- Phase 2 (P4): finance intelligence providers -----------------------------
+# LLM provider + P2/P3 analytics contracts consumed by the copilot. The
+# analytics factories return DB implementations until P2/P3 ship native
+# services — swap them here and the copilot stays unchanged.
+
+from .modules.finance_intelligence.ai.provider import (  # noqa: E402
+    RateLimiter,
+    build_provider,
+)
+from .modules.finance_intelligence.integrations import (  # noqa: E402
+    DbProductAnalyticsProvider,
+    DbSubscriptionAnalyticsProvider,
+)
+
+_llm = build_provider(_settings)
+_rate_limiter = RateLimiter(_settings.AI_RATE_LIMIT_PER_MINUTE)
+_product_analytics = DbProductAnalyticsProvider()
+_subscription_analytics = DbSubscriptionAnalyticsProvider()
+
+
+def get_llm_provider():
+    return _llm
+
+
+def get_rate_limiter():
+    return _rate_limiter
+
+
+def get_product_analytics_provider():
+    return _product_analytics
+
+
+def get_subscription_analytics_provider():
+    return _subscription_analytics
 
 
 DbDep = Depends(get_db)

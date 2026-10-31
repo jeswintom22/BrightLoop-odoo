@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(
@@ -13,15 +13,20 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = localStorage.getItem("brightloop.token");
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
-      // TODO(P1): attach JWT once Person 1's auth is wired —
-      // Authorization: `Bearer ${token}`
     },
   });
+
+  if (res.status === 401 && token) {
+    localStorage.removeItem("brightloop.token");
+    if (!location.pathname.startsWith("/login")) location.assign("/login");
+  }
 
   if (!res.ok) {
     let code = "ERROR";
@@ -37,6 +42,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(res.status, code, message, details);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 

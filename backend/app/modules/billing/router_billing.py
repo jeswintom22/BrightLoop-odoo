@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, sessionmaker
 
+from ...core.config import Settings, get_settings
 from ...core.pagination import Page, paginate
 from ...core.time import business_date
 from ...deps import (
@@ -15,6 +16,7 @@ from ...deps import (
     get_subscription_provider,
     require_roles,
 )
+from ...services.notification_event_service import notify_billing_run_invoices
 from .integrations import CustomerProvider, SubscriptionProvider
 from .models import BillingRun
 from .schemas import (
@@ -27,8 +29,8 @@ from .service_billing import BillingService
 
 router = APIRouter(tags=["billing"])
 
-READ = Depends(require_roles("admin", "finance", "viewer"))
-WRITE = Depends(require_roles("admin", "finance"))
+READ = Depends(require_roles("admin", "staff"))
+WRITE = Depends(require_roles("admin", "staff"))
 
 
 def _run_result(run: BillingRun, remaining: int) -> BillingRunResult:
@@ -43,6 +45,8 @@ def trigger_billing_run(
     service: BillingService = Depends(get_billing_service),
     subscriptions: SubscriptionProvider = Depends(get_subscription_provider),
     session_factory: sessionmaker = Depends(get_session_factory),
+    customers: CustomerProvider = Depends(get_customer_provider),
+    settings: Settings = Depends(get_settings),
     user: CurrentUser = WRITE,
 ):
     run_for_date = body.run_for_date or business_date()
@@ -53,6 +57,9 @@ def trigger_billing_run(
         offset=body.offset,
         trigger="manual",
         actor_id=user.id,
+    )
+    notify_billing_run_invoices(
+        session_factory, run=run, customers=customers, settings=settings
     )
     return _run_result(run, subscriptions.count_due(run_for_date))
 

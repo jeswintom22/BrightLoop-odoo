@@ -15,14 +15,14 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
+/lib64/
 !frontend/src/lib/
-lib64/
 parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
+/share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -38,8 +38,7 @@ venv.bak/
 
 # Environment Variables & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
 *.env
 !.env.example
 
@@ -50,12 +49,18 @@ venv.bak/
 *.db-journal
 *.db-wal
 *.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 
 # Node.js / Frontend
 node_modules/
 .next/
+.vite/
 out/
+.vercel/
 .npm/
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -76,13 +81,21 @@ desktop.ini
 # Testing, Linting & Coverage
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+coverage/
 coverage.xml
 *.cover
 *.pyo
 .mypy_cache/
 .ruff_cache/
 .hypothesis/
+.tox/
+.nox/
+.pytype/
+.pyre/
+.dmypy.json
+.cache/
 
 # Temporary & backup files
 *.bak
@@ -91,4 +104,3 @@ coverage.xml
 # Logs
 logs/
 *.log
-frontend/.vite/

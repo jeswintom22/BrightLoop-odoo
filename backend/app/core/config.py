@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from typing import List, Union
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -57,11 +57,25 @@ class Settings(BaseSettings):
     # Email (Resend). Empty key disables sending.
     RESEND_API_KEY: str = ""
     RESEND_FROM: str = "Brightloop Billing <billing@brightloop.example>"
+    RESEND_WEBHOOK_SECRET: str = ""
+    NOTIFICATION_MAX_ATTEMPTS: int = Field(default=5, ge=1, le=20)
+    NOTIFICATION_RETRY_DELAY_MINUTES: int = Field(default=15, ge=1, le=1440)
+    PAYMENT_INSTRUCTIONS: str = "Please use the secure payment options in your account."
 
     DEFAULT_CURRENCY: str = "INR"
 
+    # ── Phase 2 (P4): AI Finance Copilot provider ───────────────────────────
+    # "none" (default, deterministic template engine — no external calls),
+    # "openai" or "gemini". Missing AI_API_KEY degrades to the template path.
+    AI_PROVIDER: str = "none"
+    AI_API_KEY: str = ""
+    AI_MODEL: str = "gpt-4o-mini"          # gemini e.g. "gemini-1.5-flash"
+    AI_TIMEOUT_S: float = 20.0
+    AI_MAX_TOKENS: int = 800
+    AI_RATE_LIMIT_PER_MINUTE: int = 20     # per user, per process
+
     # Until P2/P3 modules land, billing uses in-process stub providers.
-    USE_STUB_PROVIDERS: bool = True
+    USE_STUB_PROVIDERS: bool = False
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

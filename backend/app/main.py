@@ -17,6 +17,17 @@ from .core.errors import (
 from .api.health import router as health_router
 from .routers.products import router as products_router
 from .routers.product_variants import router as variants_router
+from .routers.subscription_plans import router as plans_router
+from .routers.taxes import router as taxes_router
+from .routers.discounts import router as discounts_router
+from .routers.notifications import router as notifications_router
+from .routers.notification_preferences import (
+    router as notification_preferences_router,
+)
+from .modules.auth import router_auth, router_portal, router_users
+from .modules.subscriptions import router_subscriptions
+from .routers.notification_admin import router as notification_admin_router
+from .routers.notification_webhooks import router as notification_webhooks_router
 from .modules.billing import (
     router_billing,
     router_dashboard,
@@ -24,7 +35,10 @@ from .modules.billing import (
     router_invoices,
     router_payments,
 )
-from .modules.analytics import router as analytics_router
+from .modules.analytics import router as product_analytics_router
+from .modules.subscriptions import router_analytics as sub_analytics_router
+from .modules.finance_intelligence import models as _finance_models  # noqa: F401 - register financial_summaries
+from .modules.finance_intelligence import router as router_finance_intelligence
 
 logger = logging.getLogger("brightloop.main")
 settings = get_settings()
@@ -34,6 +48,18 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle management."""
     logger.info("Starting up %s in %s mode", settings.PROJECT_NAME, settings.ENVIRONMENT)
+    if settings.AUTH_DEV_BYPASS:
+        # dev convenience: ensure a demo admin login exists (idempotent,
+        # skipped entirely when real auth is enforced)
+        from .db.session import SessionLocal
+        from .modules.auth.service import seed_dev_admin
+
+        try:
+            with SessionLocal() as s:
+                seed_dev_admin(s)
+                s.commit()
+        except Exception as exc:  # don't block boot if DB isn't migrated yet
+            logger.warning("dev admin seed skipped: %s", exc)
     yield
     logger.info("Shutting down %s", settings.PROJECT_NAME)
 
@@ -68,9 +94,29 @@ def create_app() -> FastAPI:
     # Ops/health (no version prefix)
     app.include_router(health_router)
 
-    # Person 2 — catalog (products & variants)
+    # Person 1 — auth, users, customer portal
+    app.include_router(router_auth.router, prefix=settings.API_V1_STR)
+    app.include_router(router_users.router, prefix=settings.API_V1_STR)
+    app.include_router(router_portal.router, prefix=settings.API_V1_STR)
+
+    # Person 2 — catalog (products, variants, plans, taxes, discounts)
     app.include_router(products_router, prefix=settings.API_V1_STR)
     app.include_router(variants_router, prefix=settings.API_V1_STR)
+    app.include_router(plans_router, prefix="/api")
+    app.include_router(plans_router, prefix=settings.API_V1_STR)
+    app.include_router(taxes_router, prefix="/api")
+    app.include_router(taxes_router, prefix=settings.API_V1_STR)
+    app.include_router(discounts_router, prefix="/api")
+    app.include_router(discounts_router, prefix=settings.API_V1_STR)
+    app.include_router(notifications_router, prefix="/api")
+    app.include_router(notifications_router, prefix=settings.API_V1_STR)
+    app.include_router(notification_preferences_router, prefix="/api")
+    app.include_router(notification_preferences_router, prefix=settings.API_V1_STR)
+    app.include_router(notification_admin_router, prefix=settings.API_V1_STR)
+    app.include_router(notification_webhooks_router, prefix=settings.API_V1_STR)
+
+    # Person 3 — quotations & subscription lifecycle
+    app.include_router(router_subscriptions.router, prefix=settings.API_V1_STR)
 
     # Person 4 — billing, payments & finance dashboard
     app.include_router(router_invoices.router, prefix="/api/v1")
@@ -80,7 +126,13 @@ def create_app() -> FastAPI:
     app.include_router(router_internal.router, prefix="/api/v1")
 
     # Product Performance Analytics, Discount Effectiveness & AI Insights
-    app.include_router(analytics_router, prefix=settings.API_V1_STR)
+    app.include_router(product_analytics_router, prefix=settings.API_V1_STR)
+
+    # Person 3 Phase 2 — subscription intelligence & churn analytics
+    app.include_router(sub_analytics_router.router, prefix=settings.API_V1_STR)
+
+    # Person 4 Phase 2 — revenue intelligence, AI copilot, risk & summaries
+    app.include_router(router_finance_intelligence.router, prefix="/api/v1")
 
     app.add_api_route("/", root, methods=["GET"], tags=["Root"], summary="API Root & Overview")
 

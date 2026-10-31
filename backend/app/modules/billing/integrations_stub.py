@@ -30,6 +30,8 @@ def _uuid(seed: int) -> uuid.UUID:
 class StubPricingProvider:
     """Flat unit prices + 18% GST — a stand-in for P2's real tax/discount engine."""
 
+    is_stub_provider = True
+
     def __init__(self, price_map: dict[uuid.UUID, Decimal] | None = None):
         self._prices = price_map or {}
         self._default = Decimal("999.00")
@@ -50,6 +52,8 @@ class StubPricingProvider:
 
 
 class StubCustomerProvider:
+    is_stub_provider = True
+
     def __init__(self):
         self._customers: dict[uuid.UUID, CustomerView] = {
             cid: CustomerView(
@@ -78,6 +82,8 @@ class StubCustomerProvider:
 
 
 class StubSubscriptionProvider:
+    is_stub_provider = True
+
     def __init__(
         self,
         customers: StubCustomerProvider | None = None,
@@ -106,7 +112,7 @@ class StubSubscriptionProvider:
                 lines=[
                     SubscriptionLineView(
                         subscription_line_id=_uuid(seed + 500),
-                        product_id=_uuid(seed + 1000),
+                        product_id=seed + 1000,
                         description=f"Pro plan ({freq})",
                         quantity=Decimal("1"),
                     )
@@ -130,7 +136,7 @@ class StubSubscriptionProvider:
             lines=[
                 SubscriptionLineView(
                     subscription_line_id=_uuid(706),
-                    product_id=_uuid(1206),
+                    product_id=1206,
                     description="Legacy plan",
                     quantity=Decimal("1"),
                 )
@@ -141,6 +147,9 @@ class StubSubscriptionProvider:
 
     def all(self) -> list[SubscriptionBillingView]:
         return list(self._subs.values())
+
+    def all_subscriptions(self) -> list[SubscriptionBillingView]:
+        return self.all()
 
     def get_subscription_view(self, subscription_id):
         return self._subs.get(subscription_id)
@@ -168,3 +177,15 @@ class StubSubscriptionProvider:
     def advance_billing_date(self, session: Session, subscription_id, billed_period_end) -> None:
         view = self._subs[subscription_id]
         view.next_billing_date = billed_period_end
+
+    def close_expired(self, session: Session, as_of) -> int:
+        closed = 0
+        for v in self._subs.values():
+            if (
+                v.status == "active"
+                and v.expiry_date is not None
+                and v.expiry_date < as_of
+            ):
+                v.status = "closed"
+                closed += 1
+        return closed

@@ -213,9 +213,26 @@ erDiagram
     }
 ```
 
-## 5. API Contract
+    ### Customer notifications
 
-Base `/api/v1`. All endpoints JWT-protected except `/internal/**` (token header). Roles **[PROPOSED]**: `admin`, `finance` (read/write), `viewer` (read-only). Money fields are JSON strings rendered from `Decimal`; dates ISO-8601.
+    The notification center and preferences are available at `/api/v1/notifications`
+    and `/api/v1/notification-preferences` (also aliased under `/api`). All customer
+    queries use the authenticated user's UUID; a client-supplied customer identifier
+    is never accepted. Notifications are paginated and indexed by customer, creation
+    time, and read state. Preferences are unique per customer and default to enabled.
+    `notification_deliveries` stores provider-independent delivery history for future
+    email integration.
+
+    The current P1 authentication contract exposes a UUID but does not yet provide a
+    local `users` or `customers` SQLAlchemy table. Accordingly, `customer_id` remains
+    an opaque UUID, matching the billing module's cross-module references. Add a
+    customer foreign key in a later migration once the owning table and its lifecycle
+    are established; notification delivery rows already have a cascading FK to their
+    notification.
+
+    ## 5. API Contract
+
+    Base `/api/v1`. All endpoints JWT-protected except `/internal/**` (token header). Roles **[PROPOSED]**: `admin`, `finance` (read/write), `viewer` (read-only). Money fields are JSON strings rendered from `Decimal`; dates ISO-8601.
 
 Error envelope (all 4xx/5xx):
 
@@ -342,7 +359,7 @@ Consumed **in-process** (imported service/protocol objects, shared SQLAlchemy se
 | P1 auth | FastAPI deps `get_current_user`, `require_roles(*roles)`; JWT claims `user_id`, `roles` | router guards, `created_by`/`recorded_by` |
 | P1 customers | `CustomerService.get(id) → {id, name, email, billing_address}` | invoice header, email recipient, `q` search join |
 | P2 catalog | `PricingService.price_line(product_id, quantity, customer_id?) → PriceBreakdown{unit_price, tax_total, tax_details[], discount_total, discount_details[], line_total}` | invoice line snapshot computation |
-| P3 subscriptions | `SubscriptionBillingView{id, customer_id, status, billing_frequency, next_billing_date, expiry_date, lines[{product_id, description, quantity}]}`; `get_due_subscriptions(as_of) → list[view]`; `advance_billing_date(subscription_id, billed_period_end) -> None` (**must be callable inside billing's transaction**); `count_active() -> int` | recurring billing, invoice generation, dashboard KPI |
+| P3 subscriptions | `SubscriptionBillingView{id, customer_id, status, billing_frequency, next_billing_date, expiry_date, lines[{product_id, description, quantity}]}`; `get_due_subscriptions(as_of) → list[view]`; `all_subscriptions() → list[view]` for advance renewal reminders; `advance_billing_date(subscription_id, billed_period_end) -> None` (**must be callable inside billing's transaction**); `count_active() -> int` | recurring billing, invoice generation, dashboard KPI and notification reminders |
 
 Open questions flagged for the team:
 

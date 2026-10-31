@@ -37,7 +37,7 @@ services:
       - key: DEFAULT_CURRENCY
         value: INR
       - key: USE_STUB_PROVIDERS
-        value: "true"        # flip to false once P1/P3 tables exist
+        value: "false"        # flip to false once P1/P3 tables exist
       - key: ENVIRONMENT
         value: production
       - key: API_V1_STR

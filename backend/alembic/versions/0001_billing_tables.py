@@ -94,7 +94,7 @@ def upgrade() -> None:
         sa.Column("id", UUID, primary_key=True),
         sa.Column("invoice_id", UUID,
                   sa.ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("product_id", UUID),
+        sa.Column("product_id", sa.Integer),
         sa.Column("subscription_line_id", UUID),
         sa.Column("description", sa.String(255), nullable=False),
         sa.Column("position", sa.Integer(), nullable=False, server_default="0"),

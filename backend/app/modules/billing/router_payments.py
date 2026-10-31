@@ -4,14 +4,24 @@ import uuid
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
+from ...core.config import Settings, get_settings
 from ...core.errors import AppError
 from ...core.pagination import Page
 from ...deps import (
     CurrentUser,
+    get_customer_provider,
     get_db,
+    get_subscription_provider,
     require_roles,
 )
+from ...services.notification_delivery_service import NotificationDeliveryService
+from ...services.notification_event_service import (
+    notify_payment_confirmed,
+    notify_subscription_renewal,
+)
 from . import repository as repo
+from .integrations import CustomerProvider, SubscriptionProvider
+from .models import Invoice
 from .schemas import (
     PaymentCreateRequest,
     PaymentOut,
@@ -21,8 +31,8 @@ from .service_payments import PaymentService
 
 router = APIRouter(tags=["payments"])
 
-READ = Depends(require_roles("admin", "finance", "viewer"))
-WRITE = Depends(require_roles("admin", "finance"))
+READ = Depends(require_roles("admin", "staff"))
+WRITE = Depends(require_roles("admin", "staff"))
 
 _payments = PaymentService()
 
@@ -32,6 +42,9 @@ def record_payment(
     body: PaymentCreateRequest,
     response: Response,
     session: Session = Depends(get_db),
+    customers: CustomerProvider = Depends(get_customer_provider),
+    subscriptions: SubscriptionProvider = Depends(get_subscription_provider),
+    settings: Settings = Depends(get_settings),
     user: CurrentUser = WRITE,
 ):
     payment, created = _payments.record_payment(
@@ -45,6 +58,39 @@ def record_payment(
         actor_id=user.id,
     )
     session.commit()
+    invoice = session.get(Invoice, payment.invoice_id)
+    if invoice is not None:
+        notify_payment_confirmed(
+            session, payment=payment, customers=customers, settings=settings
+        )
+        if invoice.outstanding <= 0:
+            NotificationDeliveryService.cancel_invoice_reminders(session, invoice.id)
+            if invoice.subscription_id is not None:
+                subscription = subscriptions.get_subscription_view(
+                    invoice.subscription_id
+                )
+                customer = customers.get(invoice.customer_id)
+                if subscription is not None and customer is not None:
+                    notify_subscription_renewal(
+                        session,
+                        customer_id=invoice.customer_id,
+                        customer_name=customer.name,
+                        customer_email=customer.email,
+                        subscription_id=subscription.id,
+                        subscription_name=(
+                            subscription.lines[0].description
+                            if subscription.lines
+                            else f"Subscription {subscription.id}"
+                        ),
+                        renewal_date=invoice.period_end,
+                        amount=invoice.total_amount,
+                        currency=invoice.currency,
+                        settings=settings,
+                        confirmation=True,
+                        customer_provider_is_stub=getattr(
+                            customers, "is_stub_provider", False
+                        ),
+                    )
     response.status_code = (
         status.HTTP_201_CREATED if created else status.HTTP_200_OK
     )
