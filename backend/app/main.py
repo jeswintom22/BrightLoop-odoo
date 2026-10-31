@@ -26,6 +26,8 @@ from .routers.notification_preferences import (
 )
 from .modules.auth import router_auth, router_portal, router_users
 from .modules.subscriptions import router_subscriptions
+from .routers.notification_admin import router as notification_admin_router
+from .routers.notification_webhooks import router as notification_webhooks_router
 from .modules.billing import (
     router_billing,
     router_dashboard,
@@ -109,6 +111,8 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix=settings.API_V1_STR)
     app.include_router(notification_preferences_router, prefix="/api")
     app.include_router(notification_preferences_router, prefix=settings.API_V1_STR)
+    app.include_router(notification_admin_router, prefix=settings.API_V1_STR)
+    app.include_router(notification_webhooks_router, prefix=settings.API_V1_STR)
 
     # Person 3 — quotations & subscription lifecycle
     app.include_router(router_subscriptions.router, prefix=settings.API_V1_STR)

@@ -30,6 +30,8 @@ def _uuid(seed: int) -> uuid.UUID:
 class StubPricingProvider:
     """Flat unit prices + 18% GST — a stand-in for P2's real tax/discount engine."""
 
+    is_stub_provider = True
+
     def __init__(self, price_map: dict[uuid.UUID, Decimal] | None = None):
         self._prices = price_map or {}
         self._default = Decimal("999.00")
@@ -50,6 +52,8 @@ class StubPricingProvider:
 
 
 class StubCustomerProvider:
+    is_stub_provider = True
+
     def __init__(self):
         self._customers: dict[uuid.UUID, CustomerView] = {
             cid: CustomerView(
@@ -78,6 +82,8 @@ class StubCustomerProvider:
 
 
 class StubSubscriptionProvider:
+    is_stub_provider = True
+
     def __init__(
         self,
         customers: StubCustomerProvider | None = None,
@@ -141,6 +147,9 @@ class StubSubscriptionProvider:
 
     def all(self) -> list[SubscriptionBillingView]:
         return list(self._subs.values())
+
+    def all_subscriptions(self) -> list[SubscriptionBillingView]:
+        return self.all()
 
     def get_subscription_view(self, subscription_id):
         return self._subs.get(subscription_id)

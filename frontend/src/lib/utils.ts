@@ -5,7 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatMoney(amount: number, currency = "INR"): string {
+export function formatMoney(
+  amount: number,
+  currency = "INR",
+): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency,
@@ -31,4 +34,3 @@ export function formatDateTime(iso: string | null | undefined): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}

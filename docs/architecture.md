@@ -359,7 +359,7 @@ Consumed **in-process** (imported service/protocol objects, shared SQLAlchemy se
 | P1 auth | FastAPI deps `get_current_user`, `require_roles(*roles)`; JWT claims `user_id`, `roles` | router guards, `created_by`/`recorded_by` |
 | P1 customers | `CustomerService.get(id) → {id, name, email, billing_address}` | invoice header, email recipient, `q` search join |
 | P2 catalog | `PricingService.price_line(product_id, quantity, customer_id?) → PriceBreakdown{unit_price, tax_total, tax_details[], discount_total, discount_details[], line_total}` | invoice line snapshot computation |
-| P3 subscriptions | `SubscriptionBillingView{id, customer_id, status, billing_frequency, next_billing_date, expiry_date, lines[{product_id, description, quantity}]}`; `get_due_subscriptions(as_of) → list[view]`; `advance_billing_date(subscription_id, billed_period_end) -> None` (**must be callable inside billing's transaction**); `count_active() -> int` | recurring billing, invoice generation, dashboard KPI |
+| P3 subscriptions | `SubscriptionBillingView{id, customer_id, status, billing_frequency, next_billing_date, expiry_date, lines[{product_id, description, quantity}]}`; `get_due_subscriptions(as_of) → list[view]`; `all_subscriptions() → list[view]` for advance renewal reminders; `advance_billing_date(subscription_id, billed_period_end) -> None` (**must be callable inside billing's transaction**); `count_active() -> int` | recurring billing, invoice generation, dashboard KPI and notification reminders |
 
 Open questions flagged for the team:
 

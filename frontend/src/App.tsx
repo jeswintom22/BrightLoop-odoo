@@ -3,6 +3,7 @@ import {
   Bell,
   CreditCard,
   LayoutDashboard,
+  Mail,
   LogOut,
   Receipt,
   RefreshCw,
@@ -32,6 +33,7 @@ import RegisterPage from "./features/auth/RegisterPage";
 import { ForgotPasswordPage, ResetPasswordPage } from "./features/auth/ResetPages";
 import PortalPage from "./features/portal/PortalPage";
 import PortalInvoiceDetailPage from "./features/portal/PortalInvoiceDetailPage";
+import NotificationAdminPage from "./features/notifications/NotificationAdminPage";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -52,6 +54,8 @@ const STAFF_NAV = [
 
 const CUSTOMER_NAV = [
   { to: "/portal", label: "My account", icon: User, end: true },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/notification-preferences", label: "Preferences", icon: Settings },
 ];
 
 function useUser() {
@@ -67,7 +71,15 @@ function useUser() {
 function Layout({ children }: { children: React.ReactNode }) {
   const nav = useNavigate();
   const user = useUser().data;
-  const items = user?.role === "customer" ? CUSTOMER_NAV : STAFF_NAV;
+  const items =
+    user?.role === "customer"
+      ? CUSTOMER_NAV
+      : user?.role === "admin"
+        ? [
+            ...STAFF_NAV,
+            { to: "/notification-admin", label: "Notification admin", icon: Mail },
+          ]
+        : STAFF_NAV;
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
@@ -134,6 +146,13 @@ function StaffOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminOnly({ children }: { children: React.ReactNode }) {
+  const q = useUser();
+  if (q.isLoading) return <p className="py-10 text-center text-slate-500">Loading…</p>;
+  if (q.data?.role !== "admin") return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function CustomerOnly({ children }: { children: React.ReactNode }) {
   const q = useUser();
   if (q.isLoading) return <p className="py-10 text-center text-slate-500">Loading…</p>;
@@ -161,8 +180,9 @@ export default function App() {
                     <Route path="/invoices/:id" element={<StaffOnly><InvoiceDetailPage /></StaffOnly>} />
                     <Route path="/payments" element={<StaffOnly><PaymentsPage /></StaffOnly>} />
                     <Route path="/billing" element={<StaffOnly><BillingPage /></StaffOnly>} />
-                    <Route path="/notifications" element={<StaffOnly><NotificationCenterPage /></StaffOnly>} />
-                    <Route path="/notification-preferences" element={<StaffOnly><NotificationPreferencesPage /></StaffOnly>} />
+                    <Route path="/notifications" element={<NotificationCenterPage />} />
+                    <Route path="/notification-preferences" element={<NotificationPreferencesPage />} />
+                    <Route path="/notification-admin" element={<AdminOnly><NotificationAdminPage /></AdminOnly>} />
                     <Route path="/portal" element={<CustomerOnly><PortalPage /></CustomerOnly>} />
                     <Route path="/portal/invoices/:id" element={<CustomerOnly><PortalInvoiceDetailPage /></CustomerOnly>} />
                     <Route path="*" element={<Navigate to="/" replace />} />

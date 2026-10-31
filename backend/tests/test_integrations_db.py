@@ -131,6 +131,11 @@ def test_db_subscription_provider_due_and_advance(session_factory, contract_sche
     assert subs.count_active() == 1
     assert subs.count_due(today) == 1
 
+    all_subscriptions = subs.all_subscriptions()
+    assert contract_schema["subscription_id"] in {
+        subscription.id for subscription in all_subscriptions
+    }
+
     due = subs.get_due_subscriptions(today)
     assert len(due) == 1
     view = due[0]
