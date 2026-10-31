@@ -35,8 +35,9 @@ from .modules.billing import (
     router_invoices,
     router_payments,
 )
-from .modules.subscriptions import router_analytics
-from .modules.finance_intelligence import models as _finance_models  # noqa: F401 — register financial_summaries
+from .modules.analytics import router as product_analytics_router
+from .modules.subscriptions import router_analytics as sub_analytics_router
+from .modules.finance_intelligence import models as _finance_models  # noqa: F401 - register financial_summaries
 from .modules.finance_intelligence import router as router_finance_intelligence
 
 logger = logging.getLogger("brightloop.main")
@@ -124,8 +125,11 @@ def create_app() -> FastAPI:
     app.include_router(router_dashboard.router, prefix="/api/v1")
     app.include_router(router_internal.router, prefix="/api/v1")
 
+    # Product Performance Analytics, Discount Effectiveness & AI Insights
+    app.include_router(product_analytics_router, prefix=settings.API_V1_STR)
+
     # Person 3 Phase 2 — subscription intelligence & churn analytics
-    app.include_router(router_analytics.router, prefix=settings.API_V1_STR)
+    app.include_router(sub_analytics_router.router, prefix=settings.API_V1_STR)
 
     # Person 4 Phase 2 — revenue intelligence, AI copilot, risk & summaries
     app.include_router(router_finance_intelligence.router, prefix="/api/v1")

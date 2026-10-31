@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
+  BarChart3,
   Bell,
   CreditCard,
   LayoutDashboard,
@@ -26,6 +27,7 @@ import DashboardPage from "./features/dashboard/DashboardPage";
 import InvoiceDetailPage from "./features/invoices/InvoiceDetailPage";
 import InvoicesPage from "./features/invoices/InvoicesPage";
 import PaymentsPage from "./features/payments/PaymentsPage";
+import ProductAnalyticsPage from "./features/analytics/ProductAnalyticsPage";
 import NotificationCenterPage from "./features/notifications/NotificationCenterPage";
 import NotificationPreferencesPage from "./features/notifications/NotificationPreferencesPage";
 import LoginPage from "./features/auth/LoginPage";
@@ -41,6 +43,7 @@ const queryClient = new QueryClient({
 
 const STAFF_NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/analytics", label: "Product Analytics", icon: BarChart3 },
   { to: "/invoices", label: "Invoices", icon: Receipt },
   { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/billing", label: "Billing runs", icon: RefreshCw },
@@ -86,7 +89,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-3">
           <Link to="/" className="text-lg font-bold tracking-tight">
             Brightloop
-            <span className="ml-2 font-normal text-slate-400">Billing</span>
+            <span className="ml-2 font-normal text-slate-400">Billing & Analytics</span>
           </Link>
           <nav className="flex min-w-0 flex-1 flex-wrap gap-1">
             {items.map(({ to, label, icon: Icon, end }) => (
@@ -180,6 +183,7 @@ export default function App() {
                     <Route path="/invoices/:id" element={<StaffOnly><InvoiceDetailPage /></StaffOnly>} />
                     <Route path="/payments" element={<StaffOnly><PaymentsPage /></StaffOnly>} />
                     <Route path="/billing" element={<StaffOnly><BillingPage /></StaffOnly>} />
+                    <Route path="/analytics" element={<StaffOnly><ProductAnalyticsPage /></StaffOnly>} />
                     <Route path="/notifications" element={<NotificationCenterPage />} />
                     <Route path="/notification-preferences" element={<NotificationPreferencesPage />} />
                     <Route path="/notification-admin" element={<AdminOnly><NotificationAdminPage /></AdminOnly>} />

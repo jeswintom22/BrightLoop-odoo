@@ -47,6 +47,7 @@ export interface NotificationHistoryItem {
   customer_name: string | null;
   customer_email: string | null;
   notification_type: NotificationType;
+  channel: "in_app" | "email";
   related_entity_type: string | null;
   related_entity_id: string | null;
   created_at: string;
