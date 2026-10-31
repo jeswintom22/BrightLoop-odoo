@@ -36,10 +36,12 @@ A unified software platform that runs the full life of a subscription business�
 ## 📁 Repository Layout
 
 ```
-frontend/   React + Vite + TypeScript + Tailwind (P4 finance UI so far)
+frontend/   React + Vite + TypeScript + Tailwind (P4 finance and P1 notifications)
 backend/    FastAPI modular monolith
   app/core/            shared plumbing: config, database (Base), errors, pagination
-  app/models/          P2 — catalog tables (products, plans, taxes, discounts)
+  app/models/          P2 catalog and customer notification tables
+  app/routers/         catalog and customer notification APIs
+  app/services/        catalog and notification business logic
   app/modules/billing/ P4 — invoices, payments, billing runs, dashboard
   alembic/             single migration tree for the whole monolith
 docs/       architecture.md — billing module technical design (P4)
@@ -71,6 +73,10 @@ cd frontend
 npm install
 npm run dev        # http://localhost:5173, proxies /api → :8000
 ```
+
+Set `VITE_API_BASE_URL` in `frontend/.env.local` to point the SPA to a deployed
+API (for example, `https://api.example.com/api/v1`). In development the default
+relative URL is proxied to `http://localhost:8000`.
 
 ### Tests
 

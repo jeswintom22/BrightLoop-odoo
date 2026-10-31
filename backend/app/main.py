@@ -20,6 +20,10 @@ from .routers.product_variants import router as variants_router
 from .routers.subscription_plans import router as plans_router
 from .routers.taxes import router as taxes_router
 from .routers.discounts import router as discounts_router
+from .routers.notifications import router as notifications_router
+from .routers.notification_preferences import (
+    router as notification_preferences_router,
+)
 from .modules.billing import (
     router_billing,
     router_dashboard,
@@ -79,6 +83,10 @@ def create_app() -> FastAPI:
     app.include_router(taxes_router, prefix=settings.API_V1_STR)
     app.include_router(discounts_router, prefix="/api")
     app.include_router(discounts_router, prefix=settings.API_V1_STR)
+    app.include_router(notifications_router, prefix="/api")
+    app.include_router(notifications_router, prefix=settings.API_V1_STR)
+    app.include_router(notification_preferences_router, prefix="/api")
+    app.include_router(notification_preferences_router, prefix=settings.API_V1_STR)
 
     # Person 4 — billing, payments & finance dashboard
     app.include_router(router_invoices.router, prefix="/api/v1")

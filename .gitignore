@@ -83,6 +83,7 @@ htmlcov/
 coverage/
 coverage.xml
 *.cover
+*.tsbuildinfo
 *.pyo
 .mypy_cache/
 .ruff_cache/
@@ -101,4 +102,4 @@ coverage.xml
 # Logs
 logs/
 *.log
-frontend/.vite/
+.vite/

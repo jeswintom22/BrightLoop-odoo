@@ -1,5 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { CreditCard, LayoutDashboard, Receipt, RefreshCw } from "lucide-react";
+import {
+  Bell,
+  CreditCard,
+  LayoutDashboard,
+  Receipt,
+  RefreshCw,
+  Settings,
+} from "lucide-react";
 import {
   BrowserRouter,
   Link,
@@ -13,6 +20,8 @@ import DashboardPage from "./features/dashboard/DashboardPage";
 import InvoiceDetailPage from "./features/invoices/InvoiceDetailPage";
 import InvoicesPage from "./features/invoices/InvoicesPage";
 import PaymentsPage from "./features/payments/PaymentsPage";
+import NotificationCenterPage from "./features/notifications/NotificationCenterPage";
+import NotificationPreferencesPage from "./features/notifications/NotificationPreferencesPage";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -23,6 +32,12 @@ const NAV = [
   { to: "/invoices", label: "Invoices", icon: Receipt },
   { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/billing", label: "Billing runs", icon: RefreshCw },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+  {
+    to: "/notification-preferences",
+    label: "Preferences",
+    icon: Settings,
+  },
 ];
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -34,7 +49,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             Brightloop
             <span className="ml-2 font-normal text-slate-400">Billing</span>
           </Link>
-          <nav className="flex gap-1">
+          <nav className="min-w-0 flex flex-1 flex-wrap gap-1">
             {NAV.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
@@ -70,6 +85,14 @@ export default function App() {
             <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/billing" element={<BillingPage />} />
+            <Route
+              path="/notifications"
+              element={<NotificationCenterPage />}
+            />
+            <Route
+              path="/notification-preferences"
+              element={<NotificationPreferencesPage />}
+            />
           </Routes>
         </Layout>
       </BrowserRouter>
