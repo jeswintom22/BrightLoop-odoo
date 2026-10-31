@@ -54,40 +54,40 @@ def generate_quotation_number(db: Session, target_date: date) -> str:
     """Generates a sequential quotation reference number like QUO-2026-0001."""
     year = target_date.year
     prefix = f"QUO-{year}-"
-    last_item = (
+    items = (
         db.query(Quotation.quotation_number)
         .filter(Quotation.quotation_number.like(f"{prefix}%"))
-        .order_by(Quotation.id.desc())
-        .first()
+        .all()
     )
-    if last_item and last_item[0]:
+    max_seq = 0
+    for (num,) in items:
         try:
-            seq = int(last_item[0].split("-")[-1]) + 1
+            seq = int(num.split("-")[-1])
+            if seq > max_seq:
+                max_seq = seq
         except (ValueError, IndexError):
-            seq = 1
-    else:
-        seq = 1
-    return f"{prefix}{seq:04d}"
+            continue
+    return f"{prefix}{max_seq + 1:04d}"
 
 
 def generate_subscription_number(db: Session, target_date: date) -> str:
     """Generates a sequential subscription reference number like SUB-2026-0001."""
     year = target_date.year
     prefix = f"SUB-{year}-"
-    last_item = (
+    items = (
         db.query(Subscription.subscription_number)
         .filter(Subscription.subscription_number.like(f"{prefix}%"))
-        .order_by(Subscription.id.desc())
-        .first()
+        .all()
     )
-    if last_item and last_item[0]:
+    max_seq = 0
+    for (num,) in items:
         try:
-            seq = int(last_item[0].split("-")[-1]) + 1
+            seq = int(num.split("-")[-1])
+            if seq > max_seq:
+                max_seq = seq
         except (ValueError, IndexError):
-            seq = 1
-    else:
-        seq = 1
-    return f"{prefix}{seq:04d}"
+            continue
+    return f"{prefix}{max_seq + 1:04d}"
 
 
 # ==========================================
@@ -239,12 +239,16 @@ def _convert_quotation_to_subscription(
             detail=f"Quotation with ID {quotation_id} not found.",
         )
 
-    if quotation.subscription:
+    existing_sub = (
+        quotation.subscription
+        or db.query(Subscription).filter(Subscription.quotation_id == quotation_id).first()
+    )
+    if existing_sub:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
                 f"Quotation {quotation.quotation_number} has already been converted to "
-                f"subscription '{quotation.subscription.subscription_number}'."
+                f"subscription '{existing_sub.subscription_number}'."
             ),
         )
 
@@ -379,30 +383,40 @@ def update_subscription_state(
     action = payload.action
 
     if action == LifecycleAction.PAUSE:
-        if subscription.status == LifecycleStatus.PAUSED:
+        if subscription.status != LifecycleStatus.ACTIVE:
+            if subscription.status == LifecycleStatus.PAUSED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Subscription '{subscription.subscription_number}' is already Paused.",
+                )
+            if subscription.status == LifecycleStatus.CLOSED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot pause a Closed subscription.",
+                )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Subscription '{subscription.subscription_number}' is already Paused.",
-            )
-        if subscription.status == LifecycleStatus.CLOSED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot pause a Closed subscription.",
+                detail=f"Cannot pause a subscription in '{subscription.status.value}' state. Must be Active.",
             )
         subscription.status = LifecycleStatus.PAUSED
         subscription.paused_at = now
         subscription.pause_reason = payload.reason or "Subscription paused by user request."
 
     elif action == LifecycleAction.RESUME:
-        if subscription.status == LifecycleStatus.ACTIVE:
+        if subscription.status != LifecycleStatus.PAUSED:
+            if subscription.status == LifecycleStatus.ACTIVE:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Subscription '{subscription.subscription_number}' is already Active.",
+                )
+            if subscription.status == LifecycleStatus.CLOSED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot resume a Closed subscription.",
+                )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Subscription '{subscription.subscription_number}' is already Active.",
-            )
-        if subscription.status == LifecycleStatus.CLOSED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot resume a Closed subscription.",
+                detail=f"Cannot resume a subscription in '{subscription.status.value}' state. Must be Paused.",
             )
         subscription.status = LifecycleStatus.ACTIVE
         subscription.paused_at = None

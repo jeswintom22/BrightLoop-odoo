@@ -20,9 +20,11 @@ from .schemas import (
     LifecycleAction,
 )
 from .router import router
+from .router_analytics import router as router_analytics
 
 __all__ = [
     "router",
+    "router_analytics",
     "Quotation",
     "QuotationLine",
     "Subscription",

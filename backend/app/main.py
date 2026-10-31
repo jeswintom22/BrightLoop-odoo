@@ -24,7 +24,10 @@ from .modules.billing import (
     router_invoices,
     router_payments,
 )
-from .modules.subscriptions import router as subscriptions_router
+from .modules.subscriptions import (
+    router as subscriptions_router,
+    router_analytics as subscriptions_analytics_router,
+)
 
 logger = logging.getLogger("brightloop.main")
 settings = get_settings()
@@ -82,6 +85,8 @@ def create_app() -> FastAPI:
     # Person 3 — quotations & subscriptions
     app.include_router(subscriptions_router, prefix="/api/v1")
     app.include_router(subscriptions_router)
+    app.include_router(subscriptions_analytics_router, prefix="/api/v1")
+    app.include_router(subscriptions_analytics_router)
 
     app.add_api_route("/", root, methods=["GET"], tags=["Root"], summary="API Root & Overview")
 
