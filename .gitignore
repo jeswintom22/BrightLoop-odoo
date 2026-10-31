@@ -17,11 +17,12 @@ eggs/
 .eggs/
 /lib/
 /lib64/
+!frontend/src/lib/
 parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
+/share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -37,8 +38,7 @@ venv.bak/
 
 # Environment Variables & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
 *.env
 !.env.example
 
@@ -56,8 +56,11 @@ venv.bak/
 # Node.js / Frontend
 node_modules/
 .next/
+.vite/
 out/
+.vercel/
 .npm/
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -101,4 +104,3 @@ coverage.xml
 # Logs
 logs/
 *.log
-frontend/.vite/

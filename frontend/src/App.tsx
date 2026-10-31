@@ -15,6 +15,10 @@ import PaymentsPage from "./features/payments/PaymentsPage";
 import BillingPage from "./features/billing/BillingPage";
 import PortalPage from "./features/portal/PortalPage";
 import PortalInvoiceDetailPage from "./features/portal/PortalInvoiceDetailPage";
+import NotificationAdminPage from "./features/notifications/NotificationAdminPage";
+import NotificationCenterPage from "./features/notifications/NotificationCenterPage";
+import NotificationPreferencesPage from "./features/notifications/NotificationPreferencesPage";
+import ProductAnalyticsPage from "./features/analytics/ProductAnalyticsPage";
 
 import ProductsPage from "./features/catalog/ProductsPage";
 import PlansPage from "./features/catalog/PlansPage";
@@ -26,7 +30,6 @@ import SubscriptionsPage from "./features/subscriptions/SubscriptionsPage";
 import CustomersPage from "./features/users/CustomersPage";
 import StaffPage from "./features/users/StaffPage";
 import ReportsPage from "./features/reports/ReportsPage";
-import NotificationsPage from "./features/system/NotificationsPage";
 import SettingsPage from "./features/system/SettingsPage";
 
 import AnalyticsPanel from "./features/finance-intelligence/revenue-analytics/AnalyticsPanel";
@@ -60,6 +63,13 @@ function StaffOnly({ children }: { children: React.ReactNode }) {
   if (q.isLoading)
     return <p className="py-10 text-center text-sm text-ink-muted">Loading…</p>;
   if (q.data?.role === "customer") return <Navigate to="/portal" replace />;
+  return <>{children}</>;
+}
+
+function AdminOnly({ children }: { children: React.ReactNode }) {
+  const q = useUser();
+  if (q.isLoading) return <p className="py-10 text-center text-slate-500">Loading…</p>;
+  if (q.data?.role !== "admin") return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -112,11 +122,14 @@ export default function App() {
               <Route path="/payments" element={<StaffOnly><PaymentsPage /></StaffOnly>} />
               <Route path="/billing" element={<StaffOnly><BillingPage /></StaffOnly>} />
               <Route path="/reports" element={<StaffOnly><ReportsPage /></StaffOnly>} />
+              <Route path="/analytics" element={<StaffOnly><ProductAnalyticsPage /></StaffOnly>} />
               <Route path="/intelligence/analytics" element={<StaffOnly><AnalyticsPanel /></StaffOnly>} />
               <Route path="/intelligence/copilot" element={<StaffOnly><CopilotPanel /></StaffOnly>} />
               <Route path="/intelligence/risks" element={<StaffOnly><RisksPanel /></StaffOnly>} />
               <Route path="/intelligence/summaries" element={<StaffOnly><SummariesPanel /></StaffOnly>} />
-              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/notifications" element={<NotificationCenterPage />} />
+              <Route path="/notification-preferences" element={<NotificationPreferencesPage />} />
+              <Route path="/notification-admin" element={<AdminOnly><NotificationAdminPage /></AdminOnly>} />
               <Route path="/settings" element={<SettingsPage />} />
               {/* customer */}
               <Route path="/portal" element={<CustomerOnly><PortalPage /></CustomerOnly>} />

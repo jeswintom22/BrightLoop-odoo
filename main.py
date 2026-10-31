@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine, Base
 from routers.subscriptions import router as subscriptions_router
+from routers.analytics import router as analytics_router
 
 
 @asynccontextmanager
@@ -32,6 +33,8 @@ app.add_middleware(
 # Register routers
 app.include_router(subscriptions_router, prefix="/api")
 app.include_router(subscriptions_router)  # Direct root routes for flexible API consumption
+app.include_router(analytics_router, prefix="/api")
+app.include_router(analytics_router)
 
 
 @app.get("/health", tags=["Health"])

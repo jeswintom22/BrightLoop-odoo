@@ -15,6 +15,7 @@ from ...deps import (
     get_db,
     require_roles,
 )
+from ...services.notification_event_service import notify_invoice_generated
 from . import repository as repo
 from .emails import send_invoice_email
 from .integrations import CustomerProvider
@@ -107,6 +108,7 @@ def create_invoice(
     session: Session = Depends(get_db),
     service: BillingService = Depends(get_billing_service),
     customers: CustomerProvider = Depends(get_customer_provider),
+    settings: Settings = Depends(get_settings),
     user: CurrentUser = WRITE,
 ):
     invoice, created = service.generate_invoice(
@@ -125,6 +127,9 @@ def create_invoice(
             {"existing_invoice_id": str(invoice.id)},
         )
     session.commit()
+    notify_invoice_generated(
+        session, invoice=invoice, customers=customers, settings=settings
+    )
     return _to_detail(invoice, customers)
 
 
@@ -145,6 +150,7 @@ def patch_invoice(
     session: Session = Depends(get_db),
     service: BillingService = Depends(get_billing_service),
     customers: CustomerProvider = Depends(get_customer_provider),
+    settings: Settings = Depends(get_settings),
     _user: CurrentUser = WRITE,
 ):
     invoice = _must_get(session, invoice_id)
@@ -152,6 +158,13 @@ def patch_invoice(
         session, invoice, due_date=body.due_date, notes=body.notes
     )
     session.commit()
+    notify_invoice_generated(
+        session,
+        invoice=invoice,
+        customers=customers,
+        settings=settings,
+        event="updated",
+    )
     return _to_detail(invoice, customers)
 
 
@@ -161,11 +174,19 @@ def confirm_invoice(
     session: Session = Depends(get_db),
     service: BillingService = Depends(get_billing_service),
     customers: CustomerProvider = Depends(get_customer_provider),
+    settings: Settings = Depends(get_settings),
     _user: CurrentUser = WRITE,
 ):
     invoice = _must_get(session, invoice_id)
     service.confirm_invoice(session, invoice)
     session.commit()
+    notify_invoice_generated(
+        session,
+        invoice=invoice,
+        customers=customers,
+        settings=settings,
+        event="updated",
+    )
     return _to_detail(invoice, customers)
 
 
@@ -180,6 +201,9 @@ def cancel_invoice(
     invoice = _must_get(session, invoice_id)
     service.cancel_invoice(session, invoice)
     session.commit()
+    from ...services.notification_delivery_service import NotificationDeliveryService
+
+    NotificationDeliveryService.cancel_invoice_reminders(session, invoice.id)
     return _to_detail(invoice, customers)
 
 

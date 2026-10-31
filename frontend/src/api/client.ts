@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? "/api/v1").replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(
@@ -42,6 +42,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(res.status, code, message, details);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BadgePercent,
+  BarChart3,
   Bell,
   BrainCircuit,
   ChartLine,
@@ -10,12 +11,14 @@ import {
   FileSignature,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   Package,
   RefreshCw,
   Receipt,
   Settings,
   ShieldAlert,
+  SlidersHorizontal,
   Store,
   User,
   Users,
@@ -79,6 +82,7 @@ const NAV: NavGroup[] = [
   {
     title: "Intelligence",
     items: [
+      { to: "/analytics", label: "Product Analytics", icon: BarChart3 },
       { to: "/intelligence/analytics", label: "Revenue Analytics", icon: ChartLine },
       { to: "/intelligence/copilot", label: "Finance Copilot", icon: BrainCircuit },
       { to: "/intelligence/risks", label: "Revenue Risks", icon: ShieldAlert },
@@ -89,6 +93,8 @@ const NAV: NavGroup[] = [
     title: "System",
     items: [
       { to: "/notifications", label: "Notifications", icon: Bell },
+      { to: "/notification-preferences", label: "Preferences", icon: SlidersHorizontal },
+      { to: "/notification-admin", label: "Notification Admin", icon: Mail, adminOnly: true },
       { to: "/settings", label: "Settings", icon: Settings },
     ],
   },
@@ -101,6 +107,8 @@ const CUSTOMER_NAV: NavGroup[] = [
       { to: "/portal", label: "Overview", icon: User, end: true },
       { to: "/portal/invoices", label: "Invoices", icon: Receipt },
       { to: "/portal/payments", label: "Payments", icon: CreditCard },
+      { to: "/notifications", label: "Notifications", icon: Bell },
+      { to: "/notification-preferences", label: "Preferences", icon: SlidersHorizontal },
     ],
   },
 ];
@@ -119,10 +127,13 @@ const TITLES: [RegExp, string][] = [
   [/^\/payments/, "Payments"],
   [/^\/billing/, "Billing"],
   [/^\/reports/, "Financial Reports"],
+  [/^\/analytics/, "Product Analytics"],
   [/^\/intelligence\/analytics/, "Revenue Analytics"],
   [/^\/intelligence\/copilot/, "Finance Copilot"],
   [/^\/intelligence\/risks/, "Revenue Risks"],
   [/^\/intelligence\/summaries/, "Financial Summaries"],
+  [/^\/notification-preferences/, "Notification Preferences"],
+  [/^\/notification-admin/, "Notification Admin"],
   [/^\/notifications/, "Notifications"],
   [/^\/settings/, "Settings"],
   [/^\/portal/, "My account"],
