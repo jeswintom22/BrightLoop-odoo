@@ -1,11 +1,22 @@
+# Shared backend requirements — union of all modules' needs.
 fastapi>=0.111.0
 uvicorn[standard]>=0.30.0
-pydantic>=2.7.0
-pydantic-settings>=2.2.0
 sqlalchemy>=2.0.30
 alembic>=1.13.1
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+
+# Postgres drivers (psycopg2 for SQLAlchemy sync, asyncpg if async is used)
 psycopg2-binary>=2.9.9
 asyncpg>=0.29.0
+
+# P4 — billing module
+PyJWT>=2.8.0
+reportlab>=4.2.0
+resend>=2.4.0
+python-dateutil>=2.9.0
+
+# Tooling
 python-dotenv>=1.0.1
 pytest>=8.2.0
 httpx>=0.27.0
