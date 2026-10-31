@@ -15,6 +15,7 @@ Known data limitations (documented, never hidden from callers):
 """
 
 import datetime as dt
+import uuid
 from decimal import Decimal
 
 import sqlalchemy as sa
@@ -117,7 +118,7 @@ class DbProductAnalyticsProvider:
                 )
             ).all()
         )
-        plan_mrr: dict[int | None, Decimal] = {}
+        plan_mrr: dict[uuid.UUID | None, Decimal] = {}
         for sub_id, plan_id in sub_plan.items():
             plan_mrr[plan_id] = plan_mrr.get(plan_id, Decimal("0")) + mrr_per_sub.get(
                 sub_id, Decimal("0")

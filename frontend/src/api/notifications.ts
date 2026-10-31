@@ -16,7 +16,7 @@ export interface CustomerNotification {
   channel: "in_app" | "email";
   related_entity_type: string | null;
   related_entity_id: string | null;
-  status: "pending" | "sent" | "delivered" | "failed" | "read";
+  status: "pending" | "sent" | "delivered" | "failed" | "read" | "cancelled";
   is_read: boolean;
   read_at: string | null;
   created_at: string;

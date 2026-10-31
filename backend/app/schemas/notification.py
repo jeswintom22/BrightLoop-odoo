@@ -13,7 +13,9 @@ NotificationType = Literal[
     "invoice_generated",
 ]
 NotificationChannel = Literal["in_app", "email"]
-NotificationStatus = Literal["pending", "sent", "delivered", "failed", "read"]
+NotificationStatus = Literal[
+    "pending", "sent", "delivered", "failed", "read", "cancelled"
+]
 
 
 class NotificationResponse(BaseModel):

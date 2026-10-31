@@ -20,7 +20,7 @@ class Notification(Base):
             "channel IN ('in_app', 'email')", name="ck_notifications_channel"
         ),
         CheckConstraint(
-            "status IN ('pending', 'sent', 'delivered', 'failed', 'read')",
+            "status IN ('pending', 'sent', 'delivered', 'failed', 'read', 'cancelled')",
             name="ck_notifications_status",
         ),
         Index("ix_notifications_customer_created", "customer_id", "created_at"),
@@ -36,6 +36,10 @@ class Notification(Base):
     related_entity_type: Mapped[Optional[str]] = mapped_column(String(64))
     related_entity_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    idempotency_key: Mapped[Optional[str]] = mapped_column(
+        String(255), unique=True, index=True
+    )
+    essential: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(

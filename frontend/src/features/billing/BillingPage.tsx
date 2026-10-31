@@ -64,13 +64,13 @@ export default function BillingPage() {
               {run.isPending ? "Running…" : "Run billing now"}
             </Button>
             {run.data && (
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-ink-muted">
                 Generated {run.data.generated}, skipped {run.data.skipped},
                 failed {run.data.failed}, remaining {run.data.remaining}.
               </span>
             )}
             {run.isError && (
-              <span className="text-sm text-red-600">Run failed.</span>
+              <span className="text-sm text-danger">Run failed.</span>
             )}
           </div>
         </CardContent>
@@ -105,7 +105,7 @@ export default function BillingPage() {
               ))}
               {due.data?.length === 0 && (
                 <TR>
-                  <TD colSpan={6} className="py-8 text-center text-slate-500">
+                  <TD colSpan={6} className="py-8 text-center text-cream0">
                     Nothing due — all caught up.
                   </TD>
                 </TR>
@@ -150,7 +150,7 @@ export default function BillingPage() {
               ))}
               {runs.data?.items.length === 0 && (
                 <TR>
-                  <TD colSpan={8} className="py-8 text-center text-slate-500">
+                  <TD colSpan={8} className="py-8 text-center text-cream0">
                     No runs yet.
                   </TD>
                 </TR>

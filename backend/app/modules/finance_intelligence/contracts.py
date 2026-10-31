@@ -34,7 +34,7 @@ class ProductRevenueRow:
 
 @dataclass
 class PlanPopularityRow:
-    plan_id: int | None
+    plan_id: uuid.UUID | None
     plan_name: str
     active_subscriptions: int
     mrr: Decimal

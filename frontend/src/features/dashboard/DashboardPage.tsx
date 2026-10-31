@@ -31,7 +31,7 @@ function Kpi({ label, value }: { label: string; value: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        <CardTitle className="text-xs font-medium uppercase tracking-wide text-cream0">
           {label}
         </CardTitle>
       </CardHeader>
@@ -64,9 +64,10 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <Label htmlFor="from">From</Label>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <Label htmlFor="from">From</Label>
           <Input
             id="from"
             type="date"
@@ -74,20 +75,27 @@ export default function DashboardPage() {
             onChange={(e) => setFrom(e.target.value)}
           />
         </div>
-        <div>
-          <Label htmlFor="to">To</Label>
-          <Input
-            id="to"
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
+          <div>
+            <Label htmlFor="to">To</Label>
+            <Input
+              id="to"
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </div>
         </div>
+        <Link
+          to="/intelligence"
+          className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-cream-card hover:bg-ink"
+        >
+          Revenue intelligence →
+        </Link>
       </div>
 
-      {summary.isLoading && <p className="text-slate-500">Loading…</p>}
+      {summary.isLoading && <p className="text-cream0">Loading…</p>}
       {summary.isError && (
-        <p className="text-red-600">Failed to load dashboard.</p>
+        <p className="text-danger">Failed to load dashboard.</p>
       )}
 
       {s && (
@@ -107,7 +115,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <CardTitle>Revenue trend</CardTitle>
             <select
-              className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+              className="rounded-md border border-line px-2 py-1 text-sm"
               value={interval}
               onChange={(e) => setInterval(e.target.value)}
             >
@@ -132,7 +140,7 @@ export default function DashboardPage() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="py-10 text-center text-sm text-slate-500">
+            <p className="py-10 text-center text-sm text-cream0">
               No invoicing activity in this range yet.
             </p>
           )}
@@ -160,7 +168,7 @@ export default function DashboardPage() {
                     <TD className="font-mono text-xs">{p.payment_reference}</TD>
                     <TD>
                       <Link
-                        className="text-blue-600 hover:underline"
+                        className="text-sage-deep hover:underline"
                         to={`/invoices/${p.invoice_id}`}
                       >
                         {p.invoice_number}
@@ -172,7 +180,7 @@ export default function DashboardPage() {
                 ))}
                 {s && s.recent_payments.length === 0 && (
                   <TR>
-                    <TD colSpan={4} className="text-center text-slate-500">
+                    <TD colSpan={4} className="text-center text-cream0">
                       No payments yet.
                     </TD>
                   </TR>
@@ -201,7 +209,7 @@ export default function DashboardPage() {
                   <TR key={i.id}>
                     <TD>
                       <Link
-                        className="font-mono text-xs text-blue-600 hover:underline"
+                        className="font-mono text-xs text-sage-deep hover:underline"
                         to={`/invoices/${i.id}`}
                       >
                         {i.invoice_number}
@@ -210,7 +218,7 @@ export default function DashboardPage() {
                     <TD>{i.customer_name ?? "—"}</TD>
                     <TD>
                       {formatDate(i.due_date)}
-                      <span className="ml-1 text-xs text-red-600">
+                      <span className="ml-1 text-xs text-danger">
                         (+{i.days_overdue}d)
                       </span>
                     </TD>
@@ -219,7 +227,7 @@ export default function DashboardPage() {
                 ))}
                 {s && s.top_overdue.length === 0 && (
                   <TR>
-                    <TD colSpan={4} className="text-center text-slate-500">
+                    <TD colSpan={4} className="text-center text-cream0">
                       Nothing overdue. <StatusBadge status="success" />
                     </TD>
                   </TR>

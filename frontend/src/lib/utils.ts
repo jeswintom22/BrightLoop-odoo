@@ -5,26 +5,41 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatMoney(amount: number, currency = "INR"): string {
+export function formatMoney(
+  amount: string | number | null | undefined,
+  currency: string = "INR",
+): string {
+  if (amount === null || amount === undefined || amount === "") {
+    return "₹0.00";
+  }
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(num)) {
+    return "₹0.00";
+  }
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency,
+    currency: currency || "INR",
     maximumFractionDigits: 2,
-  }).format(amount);
+    minimumFractionDigits: 2,
+  }).format(num);
 }
 
-export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return "-";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return String(date);
+  return d.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 }
 
-export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-IN", {
+export function formatDateTime(iso: string | Date | null | undefined): string {
+  if (!iso) return "-";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (isNaN(d.getTime())) return String(iso);
+  return d.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",

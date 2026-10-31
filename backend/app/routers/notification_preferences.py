@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.deps import CurrentUser, get_current_user, get_db
+from app.deps import (
+    CurrentUser,
+    get_current_user,
+    get_db,
+    get_notification_customer_id,
+)
 from app.schemas.notification_preference import (
     NotificationPreferenceResponse,
     NotificationPreferenceUpdate,
@@ -22,7 +27,8 @@ def get_preferences(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    return NotificationPreferenceService.get_or_create(db, user.id)
+    customer_id = get_notification_customer_id(db, user)
+    return NotificationPreferenceService.get_or_create(db, customer_id)
 
 
 @router.put(
@@ -35,4 +41,5 @@ def update_preferences(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    return NotificationPreferenceService.update(db, user.id, preferences_in)
+    customer_id = get_notification_customer_id(db, user)
+    return NotificationPreferenceService.update(db, customer_id, preferences_in)

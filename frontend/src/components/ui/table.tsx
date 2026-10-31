@@ -32,7 +32,7 @@ export function TR({ className, ...props }: HTMLAttributes<HTMLTableRowElement>)
   return (
     <tr
       className={cn(
-        "border-b border-slate-100 transition-colors hover:bg-slate-50",
+        "border-b border-line transition-colors hover:bg-sage-faint",
         className,
       )}
       {...props}
@@ -47,7 +47,7 @@ export function TH({
   return (
     <th
       className={cn(
-        "h-10 px-3 text-left align-middle text-xs font-medium uppercase tracking-wide text-slate-500",
+        "h-10 px-3 text-left align-middle text-xs font-medium uppercase tracking-wide text-ink-muted",
         className,
       )}
       {...props}

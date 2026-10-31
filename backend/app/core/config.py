@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from typing import List, Union
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "BrightLoop Subscription Management API"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = (
-        "FastAPI backend for BrightLoop: catalog, subscriptions, billing and payments."
+        "FastAPI backend for BrightLoop: catalog, subscriptions, billing, payments, and product analytics."
     )
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
@@ -49,9 +49,18 @@ class Settings(BaseSettings):
     # Shared secret for POST /api/v1/internal/billing/run (GitHub Actions).
     INTERNAL_JOB_TOKEN: str = "dev-internal-token"
 
+    # OpenAI / AI Insights configuration
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     # Email (Resend). Empty key disables sending.
     RESEND_API_KEY: str = ""
     RESEND_FROM: str = "Brightloop Billing <billing@brightloop.example>"
+    RESEND_WEBHOOK_SECRET: str = ""
+    NOTIFICATION_MAX_ATTEMPTS: int = Field(default=5, ge=1, le=20)
+    NOTIFICATION_RETRY_DELAY_MINUTES: int = Field(default=15, ge=1, le=1440)
+    PAYMENT_INSTRUCTIONS: str = "Please use the secure payment options in your account."
 
     DEFAULT_CURRENCY: str = "INR"
 

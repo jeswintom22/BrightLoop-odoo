@@ -4,6 +4,7 @@ import { api } from "../../api/client";
 import type { InvoiceSummary, Page, Payment } from "../../api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { StatusBadge } from "../../components/ui/badge";
+import { PageHeader, TableSkeleton, Empty } from "../../components/ui/extras";
 import {
   Table, TBody, TD, TH, THead, TR,
 } from "../../components/ui/table";
@@ -19,22 +20,37 @@ interface PortalSub {
   next_billing_date: string | null;
 }
 
-function Empty({ text }: { text: string }) {
-  return <p className="py-6 text-center text-sm text-slate-500">{text}</p>;
-}
+export default function PortalPage({ section }: { section?: "subscriptions" | "invoices" | "payments" }) {
+  const show = (s: string) => !section || section === s;
 
-export default function PortalPage() {
-  const subs = useQuery({ queryKey: ["portal-subs"], queryFn: () => api<PortalSub[]>("/portal/subscriptions") });
-  const invoices = useQuery({ queryKey: ["portal-invoices"], queryFn: () => api<Page<InvoiceSummary>>("/portal/invoices?page_size=20") });
-  const payments = useQuery({ queryKey: ["portal-payments"], queryFn: () => api<Page<Payment>>("/portal/payments?page_size=20") });
+  const subs = useQuery({
+    queryKey: ["portal-subs"],
+    queryFn: () => api<PortalSub[]>("/portal/subscriptions"),
+    enabled: show("subscriptions"),
+  });
+  const invoices = useQuery({
+    queryKey: ["portal-invoices"],
+    queryFn: () => api<Page<InvoiceSummary>>("/portal/invoices?page_size=20"),
+    enabled: show("invoices"),
+  });
+  const payments = useQuery({
+    queryKey: ["portal-payments"],
+    queryFn: () => api<Page<Payment>>("/portal/payments?page_size=20"),
+    enabled: show("payments"),
+  });
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">My account</h1>
+      <PageHeader
+        title={section === "invoices" ? "My invoices" : section === "payments" ? "My payments" : "My account"}
+        description={!section ? "Subscriptions, invoices and payments for your account." : undefined}
+      />
 
+      {show("subscriptions") && (
       <Card>
         <CardHeader><CardTitle>My subscriptions</CardTitle></CardHeader>
         <CardContent>
+          {subs.isLoading && <TableSkeleton />}
           {subs.data?.length === 0 && <Empty text="No subscriptions yet." />}
           {subs.data && subs.data.length > 0 && (
             <Table>
@@ -44,9 +60,9 @@ export default function PortalPage() {
               <TBody>
                 {subs.data.map((s) => (
                   <TR key={s.id}>
-                    <TD className="font-medium">{s.subscription_number}</TD>
+                    <TD className="font-medium text-ink">{s.subscription_number}</TD>
                     <TD><StatusBadge status={s.status} /></TD>
-                    <TD>{s.billing_frequency}</TD>
+                    <TD className="capitalize">{s.billing_frequency}</TD>
                     <TD>{formatDate(s.start_date)}</TD>
                     <TD>{formatDate(s.next_billing_date)}</TD>
                     <TD>{formatDate(s.expiry_date)}</TD>
@@ -57,10 +73,13 @@ export default function PortalPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
+      {show("invoices") && (
       <Card>
         <CardHeader><CardTitle>My invoices</CardTitle></CardHeader>
         <CardContent>
+          {invoices.isLoading && <TableSkeleton />}
           {invoices.data?.items.length === 0 && <Empty text="No invoices yet." />}
           {invoices.data && invoices.data.items.length > 0 && (
             <Table>
@@ -71,7 +90,7 @@ export default function PortalPage() {
                 {invoices.data.items.map((i) => (
                   <TR key={i.id}>
                     <TD>
-                      <Link to={`/portal/invoices/${i.id}`} className="font-medium text-blue-600 hover:underline">
+                      <Link to={`/portal/invoices/${i.id}`} className="font-medium text-sage-deep hover:underline">
                         {i.invoice_number}
                       </Link>
                     </TD>
@@ -87,10 +106,13 @@ export default function PortalPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
+      {show("payments") && (
       <Card>
         <CardHeader><CardTitle>Payment history</CardTitle></CardHeader>
         <CardContent>
+          {payments.isLoading && <TableSkeleton />}
           {payments.data?.items.length === 0 && <Empty text="No payments yet." />}
           {payments.data && payments.data.items.length > 0 && (
             <Table>
@@ -100,9 +122,9 @@ export default function PortalPage() {
               <TBody>
                 {payments.data.items.map((p) => (
                   <TR key={p.id}>
-                    <TD className="font-medium">{p.payment_reference}</TD>
+                    <TD className="font-medium text-ink">{p.payment_reference}</TD>
                     <TD>{formatDate(p.paid_at)}</TD>
-                    <TD>{p.method}</TD>
+                    <TD className="capitalize">{p.method}</TD>
                     <TD className="text-right">{formatMoney(p.amount)}</TD>
                   </TR>
                 ))}
@@ -111,6 +133,7 @@ export default function PortalPage() {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

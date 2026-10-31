@@ -74,12 +74,12 @@ export default function InvoicesPage() {
               {create.isPending ? "Generating…" : "Generate"}
             </Button>
             {create.isSuccess && (
-              <span className="text-sm text-emerald-700">
+              <span className="text-sm text-success">
                 Invoice created as draft.
               </span>
             )}
             {createError && (
-              <span className="text-sm text-red-600">{createError}</span>
+              <span className="text-sm text-danger">{createError}</span>
             )}
           </form>
         </CardContent>
@@ -148,7 +148,7 @@ export default function InvoicesPage() {
                 <TR key={inv.id}>
                   <TD>
                     <Link
-                      className="font-mono text-xs text-blue-600 hover:underline"
+                      className="font-mono text-xs text-sage-deep hover:underline"
                       to={`/invoices/${inv.id}`}
                     >
                       {inv.invoice_number}
@@ -170,14 +170,14 @@ export default function InvoicesPage() {
               ))}
               {list.data?.items.length === 0 && (
                 <TR>
-                  <TD colSpan={7} className="py-8 text-center text-slate-500">
+                  <TD colSpan={7} className="py-8 text-center text-cream0">
                     No invoices match these filters.
                   </TD>
                 </TR>
               )}
             </TBody>
           </Table>
-          <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
+          <div className="mt-3 flex items-center justify-between text-sm text-ink-muted">
             <span>
               {list.data?.total ?? 0} invoices · page {page} of {totalPages}
             </span>

@@ -15,6 +15,13 @@ from app.modules.subscriptions.models import (
     Subscription,
     SubscriptionItem,
 )
+from app.models.notification_settings import (
+    NotificationCategorySetting,
+    NotificationDeliveryEvent,
+    NotificationReminderRule,
+    NotificationTemplate,
+    NotificationSenderSetting,
+)
 
 __all__ = [
     "Base",
@@ -33,4 +40,9 @@ __all__ = [
     "QuotationLine",
     "Subscription",
     "SubscriptionItem",
+    "NotificationReminderRule",
+    "NotificationTemplate",
+    "NotificationCategorySetting",
+    "NotificationDeliveryEvent",
+    "NotificationSenderSetting",
 ]
