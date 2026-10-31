@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
+  Bell,
   CreditCard,
   LayoutDashboard,
   LogOut,
   Receipt,
   RefreshCw,
+  Settings,
   User,
 } from "lucide-react";
 import {
@@ -23,6 +25,8 @@ import DashboardPage from "./features/dashboard/DashboardPage";
 import InvoiceDetailPage from "./features/invoices/InvoiceDetailPage";
 import InvoicesPage from "./features/invoices/InvoicesPage";
 import PaymentsPage from "./features/payments/PaymentsPage";
+import NotificationCenterPage from "./features/notifications/NotificationCenterPage";
+import NotificationPreferencesPage from "./features/notifications/NotificationPreferencesPage";
 import LoginPage from "./features/auth/LoginPage";
 import RegisterPage from "./features/auth/RegisterPage";
 import { ForgotPasswordPage, ResetPasswordPage } from "./features/auth/ResetPages";
@@ -38,6 +42,12 @@ const STAFF_NAV = [
   { to: "/invoices", label: "Invoices", icon: Receipt },
   { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/billing", label: "Billing runs", icon: RefreshCw },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+  {
+    to: "/notification-preferences",
+    label: "Preferences",
+    icon: Settings,
+  },
 ];
 
 const CUSTOMER_NAV = [
@@ -66,7 +76,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             Brightloop
             <span className="ml-2 font-normal text-slate-400">Billing</span>
           </Link>
-          <nav className="flex flex-1 gap-1">
+          <nav className="flex min-w-0 flex-1 flex-wrap gap-1">
             {items.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
@@ -151,6 +161,8 @@ export default function App() {
                     <Route path="/invoices/:id" element={<StaffOnly><InvoiceDetailPage /></StaffOnly>} />
                     <Route path="/payments" element={<StaffOnly><PaymentsPage /></StaffOnly>} />
                     <Route path="/billing" element={<StaffOnly><BillingPage /></StaffOnly>} />
+                    <Route path="/notifications" element={<StaffOnly><NotificationCenterPage /></StaffOnly>} />
+                    <Route path="/notification-preferences" element={<StaffOnly><NotificationPreferencesPage /></StaffOnly>} />
                     <Route path="/portal" element={<CustomerOnly><PortalPage /></CustomerOnly>} />
                     <Route path="/portal/invoices/:id" element={<CustomerOnly><PortalInvoiceDetailPage /></CustomerOnly>} />
                     <Route path="*" element={<Navigate to="/" replace />} />

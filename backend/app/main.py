@@ -20,6 +20,10 @@ from .routers.product_variants import router as variants_router
 from .routers.subscription_plans import router as plans_router
 from .routers.taxes import router as taxes_router
 from .routers.discounts import router as discounts_router
+from .routers.notifications import router as notifications_router
+from .routers.notification_preferences import (
+    router as notification_preferences_router,
+)
 from .modules.auth import router_auth, router_portal, router_users
 from .modules.subscriptions import router_subscriptions
 from .modules.billing import (
@@ -29,6 +33,8 @@ from .modules.billing import (
     router_invoices,
     router_payments,
 )
+from .modules.finance_intelligence import models as _finance_models  # noqa: F401 — register financial_summaries
+from .modules.finance_intelligence import router as router_finance_intelligence
 
 logger = logging.getLogger("brightloop.main")
 settings = get_settings()
@@ -98,6 +104,10 @@ def create_app() -> FastAPI:
     app.include_router(taxes_router, prefix=settings.API_V1_STR)
     app.include_router(discounts_router, prefix="/api")
     app.include_router(discounts_router, prefix=settings.API_V1_STR)
+    app.include_router(notifications_router, prefix="/api")
+    app.include_router(notifications_router, prefix=settings.API_V1_STR)
+    app.include_router(notification_preferences_router, prefix="/api")
+    app.include_router(notification_preferences_router, prefix=settings.API_V1_STR)
 
     # Person 3 — quotations & subscription lifecycle
     app.include_router(router_subscriptions.router, prefix=settings.API_V1_STR)
@@ -108,6 +118,9 @@ def create_app() -> FastAPI:
     app.include_router(router_billing.router, prefix="/api/v1")
     app.include_router(router_dashboard.router, prefix="/api/v1")
     app.include_router(router_internal.router, prefix="/api/v1")
+
+    # Person 4 Phase 2 — revenue intelligence, AI copilot, risk & summaries
+    app.include_router(router_finance_intelligence.router, prefix="/api/v1")
 
     app.add_api_route("/", root, methods=["GET"], tags=["Root"], summary="API Root & Overview")
 

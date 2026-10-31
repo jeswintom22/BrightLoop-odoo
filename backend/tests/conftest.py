@@ -15,6 +15,7 @@ import app.modules.subscriptions.models  # noqa: F401 — P3 tables
 from app.core.time import business_date
 from app.core.database import Base
 from app.modules.billing import models  # noqa: F401 — register P4 billing tables
+from app.modules.finance_intelligence import models as _fi_models  # noqa: F401 — register financial_summaries
 from app.modules.billing.integrations_stub import (
     StubCustomerProvider,
     StubPricingProvider,

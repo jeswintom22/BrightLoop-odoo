@@ -213,9 +213,26 @@ erDiagram
     }
 ```
 
-## 5. API Contract
+    ### Customer notifications
 
-Base `/api/v1`. All endpoints JWT-protected except `/internal/**` (token header). Roles **[PROPOSED]**: `admin`, `finance` (read/write), `viewer` (read-only). Money fields are JSON strings rendered from `Decimal`; dates ISO-8601.
+    The notification center and preferences are available at `/api/v1/notifications`
+    and `/api/v1/notification-preferences` (also aliased under `/api`). All customer
+    queries use the authenticated user's UUID; a client-supplied customer identifier
+    is never accepted. Notifications are paginated and indexed by customer, creation
+    time, and read state. Preferences are unique per customer and default to enabled.
+    `notification_deliveries` stores provider-independent delivery history for future
+    email integration.
+
+    The current P1 authentication contract exposes a UUID but does not yet provide a
+    local `users` or `customers` SQLAlchemy table. Accordingly, `customer_id` remains
+    an opaque UUID, matching the billing module's cross-module references. Add a
+    customer foreign key in a later migration once the owning table and its lifecycle
+    are established; notification delivery rows already have a cascading FK to their
+    notification.
+
+    ## 5. API Contract
+
+    Base `/api/v1`. All endpoints JWT-protected except `/internal/**` (token header). Roles **[PROPOSED]**: `admin`, `finance` (read/write), `viewer` (read-only). Money fields are JSON strings rendered from `Decimal`; dates ISO-8601.
 
 Error envelope (all 4xx/5xx):
 
